@@ -34,7 +34,7 @@ parser.add_argument("runargs_path", type=existing_path)
 parser.add_argument("datapath", type=existing_path)
 parser.add_argument("resultspath", type=existing_path)
 arguments = parser.parse_args()
-print("Starting ebmc test with {arguments.runargs_path}, IC3={arguments.ic3}")
+print(f"Starting ebmc test with {arguments.runargs_path}")
 
 taskname = arguments.runargs_path.stem
 
