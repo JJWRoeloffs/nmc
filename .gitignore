@@ -89,5 +89,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Gurobi licence
+gurobi.lic
+
 # resutls directories
 results*/

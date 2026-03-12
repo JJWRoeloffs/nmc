@@ -1,0 +1,6 @@
+colorama~=0.4.6
+numpy~=2.4.3
+gurobipy~=13.0.1
+pysmt
+scipy
+# Bitwuzla is also needed, but has to be installed by compiling from source
