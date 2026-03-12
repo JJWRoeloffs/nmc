@@ -18,6 +18,6 @@ COPY --from=provebuilder /root/super-prove-build/build/super_prove-hwmcc20-2-Ubu
 RUN tar -xzf super_prove-hwmcc20-2-Ubuntu_18.04-Release.tar.gz && rm super_prove-hwmcc20-2-Ubuntu_18.04-Release.tar.gz
 COPY --from=aigerbuilder /root/aiger/smvtoaig /usr/local/bin/smvtoaig
 RUN wget https://nusmv.fbk.eu/distrib/NuSMV-2.6.0-linux64.tar.gz && tar -xzf NuSMV-2.6.0-linux64.tar.gz && mv /root/NuSMV-2.6.0-Linux/bin/* /usr/local/bin/ && rm -rf NuSMV-2.7.1-linux64.tar.xz NuSMV-2.7.1-linux64
-RUN wget https://github.com/diffblue/hw-cbmc/releases/download/ebmc-5.9/ebmc_5.9_amd64.deb && dpkg -i ebmc_5.9_amd64.deb && rm ebmc_5.9_amd64.deb
+RUN wget https://github.com/diffblue/hw-cbmc/releases/download/ebmc-5.6/ebmc_5.6_amd64.deb && dpkg -i ebmc_5.6_amd64.deb && rm ebmc_5.6_amd64.deb
 
 COPY ./run_experiment.py ./
