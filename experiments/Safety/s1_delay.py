@@ -38,7 +38,7 @@ init_samp = [(0, [float(0)])]
 
 
 try:
-    import nur
+    from nur.bitwuzla_utils import b_set, b_unset
 except ImportError:
     print("Library nur not found. Not exporting spec_automata function")
 else:
@@ -48,9 +48,9 @@ else:
         if q_cur == 0 and q_nex == 1:
             cases.append([])
         if q_cur == 1 and q_nex == 1:
-            cases.append([nur.BUnSet(non_state, "err", 1, ctx)])
+            cases.append([b_unset(non_state, "err", 1, ctx)])
         if q_cur == 1 and q_nex == 2:
-            cases.append([nur.Bset(non_state, "err", 1, ctx)])
+            cases.append([b_set(non_state, "err", 1, ctx)])
         elif q_cur == 2 and q_nex == 2:
             cases.append([])
         return cases

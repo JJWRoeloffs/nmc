@@ -40,7 +40,7 @@ init_samp = [(0, [float(0), float(1)])]
 
 
 try:
-    import nur
+    from nur.bitwuzla_utils import b_set, b_unset
 except ImportError:
     print("Library nur not found. Not exporting spec_automata function")
 else:
@@ -52,29 +52,29 @@ else:
         elif q_cur == 0 and q_nex == 1:
             cases.append(
                 [
-                    nur.BUnSet(curr_vars, "digit_select", 1, ctx),
-                    nur.Bset(non_state, "rst", 0, ctx),
+                    b_unset(curr_vars, "digit_select", 1, ctx),
+                    b_set(non_state, "rst", 0, ctx),
                 ]
             )
         elif q_cur == 1 and q_nex == 1:
             cases.append(
                 [
-                    nur.BUnSet(curr_vars, "digit_select", 1, ctx),
-                    nur.Bset(non_state, "rst", 0, ctx),
+                    b_unset(curr_vars, "digit_select", 1, ctx),
+                    b_set(non_state, "rst", 0, ctx),
                 ]
             )
         elif q_cur == 0 and q_nex == 2:
             cases.append(
                 [
-                    nur.BUnSet(curr_vars, "digit_select", 0, ctx),
-                    nur.Bset(non_state, "rst", 0, ctx),
+                    b_unset(curr_vars, "digit_select", 0, ctx),
+                    b_set(non_state, "rst", 0, ctx),
                 ]
             )
         elif q_cur == 2 and q_nex == 2:
             cases.append(
                 [
-                    nur.BUnSet(curr_vars, "digit_select", 0, ctx),
-                    nur.Bset(non_state, "rst", 0, ctx),
+                    b_unset(curr_vars, "digit_select", 0, ctx),
+                    b_set(non_state, "rst", 0, ctx),
                 ]
             )
         return cases

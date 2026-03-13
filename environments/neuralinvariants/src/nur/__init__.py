@@ -12,27 +12,6 @@ Primary Functions:
     • Extract state/input/output metadata by invoking EBMC’s symbol table.
     • Returns OrderedDicts: state_var, inp_out_vars with keys {lb, ub, size, dist, type}.
 
- 2. set_lhs_state(var_list, value_list, bw_obj)
-    • Build a balanced conjunction of BV equalities to assign values to state bits [for random sample ablation study].
-
- 3. rangeBitwuzla(var, bw_obj, lb, ub)
-    • Constrain a BitVec term within [lb, ub] using BV_UGE and BV_ULE.
-
- 4. bAnd(term_list, bw_obj) / bOr(term_list, bw_obj)
-    • Recursively assemble balanced AND/OR trees over lists of terms.
-
- 5. bOrOfAnd(list_of_term_lists, bw_obj)
-    • Create a disjunction of conjunctions for 2D arrays of terms.
-
- 6. bv2int(bitvec_list, bw_obj, bits) / todecimal(x, bw_obj, bits) / todecimal2(...)
-    • Decode Bitwuzla BitVec results into Python integers (two’s complement).
-
- 7. bPrint(term_list, bw_obj) / bPrintFormula(term)
-    • Print term symbols and values or formula strings for debugging.
-
- 8. Bset(arr, var_name, val, context) / BUnSet(...)
-    • Generate (or negate) equality constraints for named state/input variables.
-
  9. verilogSMT(name, module_name, state_vars, bits, inp_out_vars)
     • Invoke EBMC to create an SMT2 model, clean and extend with NuR-prefixed
       declarations, parse into Bitwuzla, assert range constraints.
@@ -70,10 +49,8 @@ Logging:
 
 """
 
-import os
 import time
 import random
-from typing import Iterable
 import numpy as np
 from collections import OrderedDict
 from itertools import chain, product
@@ -85,6 +62,13 @@ import bitwuzla as bw
 from nur import gurobi_check
 from nur import gurobi_train
 from nur import smt_train
+from nur.bitwuzla_utils import (
+    set_lhs_state,
+    b_range,
+    b_and,
+    b_int,
+    bitwuzla_print,
+)
 
 colours = [
     Fore.RED,
@@ -159,105 +143,6 @@ def readForVars(smb_tabfile: Path):
                     "type": "state",
                 }
     return state_var, inp_out_vars
-
-
-"""
-# =====================================================================
-# 					    Bitwuzla Utility Functions
-# =====================================================================
-
-"""
-
-
-def set_lhs_state(var, val, bw_obj):
-    tm, opt, parser, bvsizeB = bw_obj
-    eq_this = tm.mk_term(bw.Kind.EQUAL, [var[0], tm.mk_bv_value(bvsizeB, val[0])])
-    if len(var) == 1:
-        return eq_this
-    return tm.mk_term(bw.Kind.AND, [eq_this, set_lhs_state(var[1:], val[1:], bw_obj)])
-
-
-def rangeBitwuzla(var, bw_obj, lb, ub):
-    tm, opt, parser, bvsizeB = bw_obj
-    l1 = tm.mk_term(bw.Kind.BV_UGE, [var, tm.mk_bv_value(bvsizeB, lb)])
-    u1 = tm.mk_term(bw.Kind.BV_ULE, [var, tm.mk_bv_value(bvsizeB, ub)])
-    return tm.mk_term(bw.Kind.AND, [l1, u1])
-
-
-def bAnd(arr, bw_obj):
-    tm, opt, parser, bvsizeB = bw_obj
-    if len(arr) == 1:
-        return arr[0]
-    if len(arr) == 2:  # REMOVE THIS CASE ITS REDUNDANT
-        return tm.mk_term(bw.Kind.AND, [arr[0], arr[1]])
-    part = len(arr) // 2
-    return tm.mk_term(bw.Kind.AND, [bAnd(arr[:part], bw_obj), bAnd(arr[part:], bw_obj)])
-
-
-def bOr(arr, bw_obj):
-    tm, opt, parser, bvsizeB = bw_obj
-    if len(arr) == 1:
-        return arr[0]
-    if len(arr) == 2:  # REMOVE THIS CASE ITS REDUNDANT
-        return tm.mk_term(bw.Kind.OR, [arr[0], arr[1]])
-    part = len(arr) // 2
-    return tm.mk_term(bw.Kind.OR, [bOr(arr[:part], bw_obj), bOr(arr[part:], bw_obj)])
-
-
-def bOrOfAnd(arr2D, bw_obj):
-    arr1D = []
-    for arr in arr2D:
-        arr1D.append(bAnd(arr, bw_obj))
-    return bOr(arr1D, bw_obj)
-
-
-def bv2int(arr, bw_obj, bits):
-    tm, opt, parser, bvsizeB = bw_obj
-    arr2 = []
-    for i in range(len(arr)):
-        arr2.append(todecimal2(arr[i], bw_obj, bits))
-    return arr2
-
-
-def todecimal(x, bw_obj, bits):
-    tm, opt, parser, bvsizeB = bw_obj
-    val = int(parser.bitwuzla().get_value(x).value(10))
-    s = 1 << (bits - 1)
-    return (val & s - 1) - (val & s)
-
-
-def todecimal2(x, bw_obj, bits):
-    tm, opt, parser, bvsizeB = bw_obj
-    val = int(parser.bitwuzla().get_value(x).value(10))
-    s = 1 << (bits - 1)
-    return (val & s - 1) - (val & s)
-
-
-def bPrint(arr, bw_obj):
-    tm, opt, parser, bvsizeB = bw_obj
-    for ar in arr:
-        print(f" {ar.symbol()} --> {parser.bitwuzla().get_value(ar).value(10)} ")
-
-
-def bPrintFormula(trm):
-    print(trm.str())
-
-
-def Bset(arr, var, val, context):
-    state_vars, inp_out_vars, bw_obj, bits = context
-    tm, opt, parser, bvsizeB = bw_obj
-    assert (var in state_vars.keys()) or (var in inp_out_vars.keys())
-    var_keys = state_vars.keys() if (var in state_vars.keys()) else inp_out_vars.keys()
-    return tm.mk_term(
-        bw.Kind.EQUAL,
-        [arr[[svk for svk in var_keys].index(var)], tm.mk_bv_value(bvsizeB, val)],
-    )
-
-
-def BUnSet(arr, var, val, context):
-    state_vars, inp_out_vars, bw_obj, bits = context
-    tm, opt, parser, bvsizeB = bw_obj
-    return tm.mk_term(bw.Kind.NOT, [Bset(arr, var, val, context)])
 
 
 """
@@ -338,28 +223,24 @@ def verilogSMT(module_name, state_vars, bits, inp_out_vars, smt2file):
             nv = parser.parse_term(f"|NuR::{module_name}.{key}2|")
             curr_vars.append(cv)
             next_vars.append(nv)
-            rangesN.append(
-                rangeBitwuzla(next_vars[-1], bw_obj, value["lb"], value["ub"])
-            )
-            rangesC.append(
-                rangeBitwuzla(curr_vars[-1], bw_obj, value["lb"], value["ub"])
-            )
+            rangesN.append(b_range(next_vars[-1], bw_obj, value["lb"], value["ub"]))
+            rangesC.append(b_range(curr_vars[-1], bw_obj, value["lb"], value["ub"]))
         elif value["type"] == "input":
             cv = parser.parse_term(f"|NuR::{module_name}.{key}1|")
             non_state_vars.append(cv)
             rangesC.append(
-                rangeBitwuzla(non_state_vars[-1], bw_obj, value["lb"], value["ub"])
+                b_range(non_state_vars[-1], bw_obj, value["lb"], value["ub"])
             )
         elif value["type"] == "output":
             cv = parser.parse_term(f"|NuR::{module_name}.{key}1|")
             non_state_vars.append(cv)
             rangesC.append(
-                rangeBitwuzla(non_state_vars[-1], bw_obj, value["lb"], value["ub"])
+                b_range(non_state_vars[-1], bw_obj, value["lb"], value["ub"])
             )
     # 0101, 1212 -> 1_delay; 1211 -> s2_lcd
     sanityCheckRange(bw_obj, rangesC, rangesN, curr_vars, next_vars)
-    parser.bitwuzla().assert_formula(bAnd(rangesC, bw_obj))
-    parser.bitwuzla().assert_formula(bAnd(rangesN, bw_obj))
+    parser.bitwuzla().assert_formula(b_and(rangesC, bw_obj))
+    parser.bitwuzla().assert_formula(b_and(rangesN, bw_obj))
     bw_obj = (tm, opt, parser, bvsizeB)
     return bw_obj, curr_vars, next_vars, non_state_vars, state_names
 
@@ -369,8 +250,8 @@ def sanityCheckRange(bw_obj, rangesC, rangesN, curr_vars, next_vars):
     tm, opt, parser, bvsizeB = bw_obj
     beginV = time.time()
     parser.bitwuzla().push()
-    parser.bitwuzla().assert_formula(bAnd(rangesC, bw_obj))
-    parser.bitwuzla().assert_formula(tm.mk_term(bw.Kind.NOT, [bAnd(rangesN, bw_obj)]))
+    parser.bitwuzla().assert_formula(b_and(rangesC, bw_obj))
+    parser.bitwuzla().assert_formula(tm.mk_term(bw.Kind.NOT, [b_and(rangesN, bw_obj)]))
     res = parser.bitwuzla().check_sat()
     endV1 = time.time()
     print(f"Time Range Invar: {endV1 - beginV}")
@@ -378,8 +259,8 @@ def sanityCheckRange(bw_obj, rangesC, rangesN, curr_vars, next_vars):
         print(f"Range is an Invar [PASS]")
     elif res == bw.Result.SAT:
         print(f"Range is an Invar [FAIL]")
-        bPrint(curr_vars, bw_obj)
-        bPrint(next_vars, bw_obj)
+        bitwuzla_print(curr_vars, bw_obj)
+        bitwuzla_print(next_vars, bw_obj)
         breakpoint()
     parser.bitwuzla().pop()
 
@@ -429,12 +310,12 @@ def get_random_samples(
                 )
                 parser.bitwuzla().assert_formula(set_lhs)
                 if len(trans_) > 0:
-                    parser.bitwuzla().assert_formula(bAnd(trans_, bw_obj))
+                    parser.bitwuzla().assert_formula(b_and(trans_, bw_obj))
                 res = parser.bitwuzla().check_sat()
                 if res == bw.Result.SAT:
                     # bPrint(curr_vars, bw_obj)
-                    c_cur = np.array(bv2int(curr_vars, bw_obj, bits))
-                    c_nex = np.array(bv2int(next_vars, bw_obj, bits))
+                    c_cur = np.array(b_int(curr_vars, bw_obj, bits))
+                    c_nex = np.array(b_int(next_vars, bw_obj, bits))
                     samples.append((q_cur, c_cur, q_nex, c_nex))
                     print(
                         f"{Fore.LIGHTGREEN_EX}Valid sample: {(q_cur, c_cur, q_nex, c_nex)}{Style.RESET_ALL}"
@@ -470,12 +351,12 @@ def get_first_samples(
         ):
             parser.bitwuzla().push()
             if len(trans_) > 0:
-                parser.bitwuzla().assert_formula(bAnd(trans_, bw_obj))
+                parser.bitwuzla().assert_formula(b_and(trans_, bw_obj))
             res = parser.bitwuzla().check_sat()
             if res == bw.Result.SAT:
                 # bPrint(curr_vars, bw_obj)
-                c_cur = np.array(bv2int(curr_vars, bw_obj, bits))
-                c_nex = np.array(bv2int(next_vars, bw_obj, bits))
+                c_cur = np.array(b_int(curr_vars, bw_obj, bits))
+                c_nex = np.array(b_int(next_vars, bw_obj, bits))
                 samples.append((q_cur, c_cur, q_nex, c_nex))
                 print(
                     f"{Fore.CYAN}q = {q_cur} to q = {q_nex} is SAT {(q_cur, c_cur, q_nex, c_nex)}{Style.RESET_ALL}"

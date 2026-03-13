@@ -25,7 +25,7 @@ is_init = [1, 0, 0]
 init_samp = [(0, [float(0), float(0), float(0), float(0)])]
 
 try:
-    import nur
+    from nur.bitwuzla_utils import b_set, b_unset
 except ImportError:
     print("Library nur not found. Not exporting spec_automata function")
 else:
@@ -40,46 +40,46 @@ else:
         elif q_cur == 0 and q_nex == 1:
             cases.append(
                 [
-                    nur.BUnSet(curr_vars, "h_cnt", 0, ctx),
-                    nur.Bset(curr_vars, "v_cnt", 0, ctx),
-                    nur.BUnSet(next_vars, "h_cnt", 0, ctx),
-                    nur.Bset(next_vars, "v_cnt", 0, ctx),
+                    b_unset(curr_vars, "h_cnt", 0, ctx),
+                    b_set(curr_vars, "v_cnt", 0, ctx),
+                    b_unset(next_vars, "h_cnt", 0, ctx),
+                    b_set(next_vars, "v_cnt", 0, ctx),
                 ]
             )
 
             cases.append(
                 [
-                    nur.BUnSet(curr_vars, "h_cnt", 0, ctx),
-                    nur.Bset(curr_vars, "v_cnt", 0, ctx),
-                    nur.BUnSet(next_vars, "h_cnt", 0, ctx),
-                    nur.BUnSet(next_vars, "v_cnt", 0, ctx),
+                    b_unset(curr_vars, "h_cnt", 0, ctx),
+                    b_set(curr_vars, "v_cnt", 0, ctx),
+                    b_unset(next_vars, "h_cnt", 0, ctx),
+                    b_unset(next_vars, "v_cnt", 0, ctx),
                 ]
             )
 
         elif q_cur == 1 and q_nex == 1:
             cases.append(
                 [
-                    nur.BUnSet(curr_vars, "h_cnt", 0, ctx),
-                    nur.Bset(curr_vars, "v_cnt", 0, ctx),
-                    nur.BUnSet(next_vars, "h_cnt", 0, ctx),
-                    nur.Bset(next_vars, "v_cnt", 0, ctx),
+                    b_unset(curr_vars, "h_cnt", 0, ctx),
+                    b_set(curr_vars, "v_cnt", 0, ctx),
+                    b_unset(next_vars, "h_cnt", 0, ctx),
+                    b_set(next_vars, "v_cnt", 0, ctx),
                 ]
             )
 
             cases.append(
                 [
-                    nur.BUnSet(curr_vars, "h_cnt", 0, ctx),
-                    nur.Bset(curr_vars, "v_cnt", 0, ctx),
-                    nur.BUnSet(next_vars, "h_cnt", 0, ctx),
-                    nur.BUnSet(next_vars, "v_cnt", 0, ctx),
+                    b_unset(curr_vars, "h_cnt", 0, ctx),
+                    b_set(curr_vars, "v_cnt", 0, ctx),
+                    b_unset(next_vars, "h_cnt", 0, ctx),
+                    b_unset(next_vars, "v_cnt", 0, ctx),
                 ]
             )
 
         elif q_cur == 1 and q_nex == 2:
             cases.append(
                 [
-                    nur.BUnSet(curr_vars, "h_cnt", 0, ctx),
-                    nur.BUnSet(curr_vars, "v_cnt", 0, ctx),
+                    b_unset(curr_vars, "h_cnt", 0, ctx),
+                    b_unset(curr_vars, "v_cnt", 0, ctx),
                 ]
             )
 

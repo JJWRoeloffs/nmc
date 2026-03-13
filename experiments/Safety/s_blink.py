@@ -22,7 +22,7 @@ is_init = [1, 0, 0]
 init_samp = [(0, [float(0), float(0)])]
 
 try:
-    import nur
+    from nur.bitwuzla_utils import b_set, b_unset
 except ImportError:
     print("Library nur not found. Not exporting spec_automata function")
 else:
@@ -32,29 +32,29 @@ else:
         cases = []
 
         if q_cur == 0 and q_nex == 0:
-            cases.append([nur.BUnSet(curr_vars, "mode", 1, ctx)])
+            cases.append([b_unset(curr_vars, "mode", 1, ctx)])
 
         elif q_cur == 0 and q_nex == 1:
-            cases.append([nur.Bset(curr_vars, "mode", 1, ctx)])
+            cases.append([b_set(curr_vars, "mode", 1, ctx)])
 
         elif q_cur == 1 and q_nex == 0:
-            cases.append([nur.BUnSet(curr_vars, "mode", 1, ctx)])
+            cases.append([b_unset(curr_vars, "mode", 1, ctx)])
 
         elif q_cur == 1 and q_nex == 1:
-            # cases.append([nur.Bset(non_state, 'rst', 1, ctx),
-            # 					   nur.Bset(curr_vars, 'mode', 1, ctx)])
+            # cases.append([b_set(non_state, 'rst', 1, ctx),
+            # 					   b_set(curr_vars, 'mode', 1, ctx)])
             cases.append(
                 [
-                    nur.BUnSet(non_state, "flg", 1, ctx),
-                    nur.Bset(curr_vars, "mode", 1, ctx),
+                    b_unset(non_state, "flg", 1, ctx),
+                    b_set(curr_vars, "mode", 1, ctx),
                 ]
             )
 
         elif q_cur == 1 and q_nex == 2:
             cases.append(
                 [
-                    nur.Bset(non_state, "flg", 1, ctx),
-                    nur.Bset(curr_vars, "mode", 1, ctx),
+                    b_set(non_state, "flg", 1, ctx),
+                    b_set(curr_vars, "mode", 1, ctx),
                 ]
             )
 

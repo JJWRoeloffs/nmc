@@ -48,7 +48,7 @@ init_samp = [(0, [float(0), float(0), float(0)])]
 
 
 try:
-    import nur
+    from nur.bitwuzla_utils import b_set, b_unset
 except ImportError:
     print("Library nur not found. Not exporting spec_automata function")
 else:
@@ -61,21 +61,21 @@ else:
             cases.append([])  # Transition from start state
 
         elif q_cur == 1 and q_nex == 1:
-            cases.append([nur.bOr([nur.Bset(curr_vars, "stretch", 1, ctx)], bw_obj)])
+            cases.append([nur.bOr([b_set(curr_vars, "stretch", 1, ctx)], bw_obj)])
 
         elif q_cur == 1 and q_nex == 2:
-            cases.append([nur.bOr([nur.BUnSet(curr_vars, "stretch", 1, ctx)], bw_obj)])
+            cases.append([nur.bOr([b_unset(curr_vars, "stretch", 1, ctx)], bw_obj)])
 
         elif q_cur == 2 and q_nex == 2:
-            cases.append([nur.bOr([nur.BUnSet(curr_vars, "stretch", 1, ctx)], bw_obj)])
+            cases.append([nur.bOr([b_unset(curr_vars, "stretch", 1, ctx)], bw_obj)])
 
         elif q_cur == 2 and q_nex == 1:
             cases.append(
                 [
                     nur.bOr(
                         [
-                            nur.bAnd([nur.Bset(curr_vars, "stretch", 1, ctx)], bw_obj),
-                            nur.Bset(non_state, "switch_range", 1, ctx),
+                            nur.bAnd([b_set(curr_vars, "stretch", 1, ctx)], bw_obj),
+                            b_set(non_state, "switch_range", 1, ctx),
                         ],
                         bw_obj,
                     )
@@ -85,8 +85,8 @@ else:
         elif q_cur == 2 and q_nex == 3:
             cases.append(
                 [
-                    nur.BUnSet(non_state, "switch_range", 1, ctx),
-                    nur.Bset(curr_vars, "stretch", 1, ctx),
+                    b_unset(non_state, "switch_range", 1, ctx),
+                    b_set(curr_vars, "stretch", 1, ctx),
                 ]
             )
 

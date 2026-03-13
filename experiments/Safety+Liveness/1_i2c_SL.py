@@ -48,7 +48,7 @@ is_init = [1, 0, 0]
 init_samp = [(0, [float(0), float(0), float(0)])]
 
 try:
-    import nur
+    from nur.bitwuzla_utils import b_set, b_unset
 except ImportError:
     print("Library nur not found. Not exporting spec_automata function")
 else:
@@ -56,34 +56,34 @@ else:
     def spec_automata(ctx, q_cur, curr_vars, V0, q_nex, next_vars, V1, non_state, s):
         cases = []
         if q_cur == 0 and q_nex == 0:
-            cases.append([nur.Bset(non_state, "rst", 0, ctx)])
+            cases.append([b_set(non_state, "rst", 0, ctx)])
 
         elif q_cur == 0 and q_nex == 1:
             cases.append(
                 [
-                    nur.Bset(non_state, "rst", 0, ctx),
-                    nur.BUnSet(curr_vars, "stretch", 1, ctx),
-                    nur.BUnSet(non_state, "switch_range", 1, ctx),
+                    b_set(non_state, "rst", 0, ctx),
+                    b_unset(curr_vars, "stretch", 1, ctx),
+                    b_unset(non_state, "switch_range", 1, ctx),
                 ]
             )
         elif q_cur == 1 and q_nex == 1:
             cases.append(
                 [
-                    nur.Bset(non_state, "rst", 0, ctx),
-                    nur.BUnSet(curr_vars, "stretch", 1, ctx),
-                    nur.BUnSet(non_state, "switch_range", 1, ctx),
+                    b_set(non_state, "rst", 0, ctx),
+                    b_unset(curr_vars, "stretch", 1, ctx),
+                    b_unset(non_state, "switch_range", 1, ctx),
                 ]
             )
         elif q_cur == 1 and q_nex == 2:
             cases.append(
                 [
-                    nur.Bset(non_state, "rst", 0, ctx),
-                    nur.Bset(curr_vars, "stretch", 1, ctx),
-                    nur.BUnSet(non_state, "switch_range", 1, ctx),
+                    b_set(non_state, "rst", 0, ctx),
+                    b_set(curr_vars, "stretch", 1, ctx),
+                    b_unset(non_state, "switch_range", 1, ctx),
                 ]
             )
 
         if q_cur == 2 and q_nex == 2:
-            cases.append([nur.Bset(non_state, "rst", 0, ctx)])
+            cases.append([b_set(non_state, "rst", 0, ctx)])
 
         return cases

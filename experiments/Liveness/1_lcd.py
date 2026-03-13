@@ -37,7 +37,7 @@ init_samp = [(0, [float(0), float(0)])]
 
 
 try:
-    import nur
+    from nur.bitwuzla_utils import b_set, b_unset
 except ImportError:
     print("Library nur not found. Not exporting spec_automata function")
 else:
@@ -49,17 +49,17 @@ else:
         elif q_cur == 0 and q_nex == 1:
             cases.append(
                 [
-                    nur.BUnSet(curr_vars, "state", 2, ctx),
-                    nur.Bset(non_state, "lcd_enable", 1, ctx),
-                    nur.BUnSet(next_vars, "state", 2, ctx),
+                    b_unset(curr_vars, "state", 2, ctx),
+                    b_set(non_state, "lcd_enable", 1, ctx),
+                    b_unset(next_vars, "state", 2, ctx),
                 ]
             )
         elif q_cur == 1 and q_nex == 1:
             cases.append(
                 [
-                    nur.BUnSet(curr_vars, "state", 2, ctx),
-                    nur.Bset(non_state, "lcd_enable", 1, ctx),
-                    nur.BUnSet(next_vars, "state", 2, ctx),
+                    b_unset(curr_vars, "state", 2, ctx),
+                    b_set(non_state, "lcd_enable", 1, ctx),
+                    b_unset(next_vars, "state", 2, ctx),
                 ]
             )
         return cases
