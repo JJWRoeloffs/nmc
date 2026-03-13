@@ -112,14 +112,8 @@ norm_range = 100
 """
 
 
-def readForVars(name, module_name, svfile: Path, smb_tabfile):
-    os.system(
-        f"ebmc {svfile} --show-symbol-table --bound 0 --top {module_name} > {smb_tabfile}"
-    )
-    data = ""
-    print(os.getcwd())
-    with open(smb_tabfile, "r") as file:
-        data = file.read()
+def readForVars(smb_tabfile: Path):
+    data = smb_tabfile.read_text()
     data = data[data.find("Symbols:") + 9 :]
     blocks = [block.strip() for block in data.strip().split("\n\n")]
     result = {}
@@ -273,13 +267,8 @@ def BUnSet(arr, var, val, context):
 """
 
 
-def verilogSMT(name, module_name, state_vars, bits, inp_out_vars, svfile, smt2file):
-    os.system(
-        f"ebmc {svfile} --smt2 --bound 1 --top {module_name} --outfile {smt2file}"
-    )
-    smt2_model = ""
-    with open(smt2file, "r") as file:
-        smt2_model = file.read()
+def verilogSMT(module_name, state_vars, bits, inp_out_vars, smt2file):
+    smt2_model = smt2file.read_text()
     # Remove the exit command
     smt2_model = "\n".join(
         [
