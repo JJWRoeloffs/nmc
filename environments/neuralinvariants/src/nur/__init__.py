@@ -8,17 +8,6 @@ Global Constants:
   - colors: ANSI palettes for console output (Fore.*).
 
 Primary Functions:
- 1. readForVars(name, module_name, shell_inputs)
-    • Extract state/input/output metadata by invoking EBMC’s symbol table.
-    • Returns OrderedDicts: state_var, inp_out_vars with keys {lb, ub, size, dist, type}.
-
- 9. verilogSMT(name, module_name, state_vars, bits, inp_out_vars)
-    • Invoke EBMC to create an SMT2 model, clean and extend with NuR-prefixed
-      declarations, parse into Bitwuzla, assert range constraints.
-    • Returns (bw_obj, curr_vars, next_vars, non_state_vars, state_names).
-
-10. sanityCheckRange(bw_obj, rangesC, rangesN, curr_vars, next_vars)
-    • Verify that current-state ranges imply next-state ranges (range invariant).
 
 11. random_lhs_set(state_vars, state_names, curr_vars, bw_obj)
     • Sample random assignments for state variables and return assignment + term.
@@ -69,6 +58,7 @@ from nur.bitwuzla_utils import (
     b_int,
     bitwuzla_print,
 )
+from nur.parsing import read_svfile
 
 colours = [
     Fore.RED,
@@ -88,181 +78,6 @@ colours = [
 delta = 1e-2
 col_num = len(colours)
 norm_range = 100
-
-"""
-# =====================================================================
-# 					Variable Name and Type using EBMC
-# =====================================================================
-"""
-
-
-def readForVars(smb_tabfile: Path):
-    data = smb_tabfile.read_text()
-    data = data[data.find("Symbols:") + 9 :]
-    blocks = [block.strip() for block in data.strip().split("\n\n")]
-    result = {}
-    for block in blocks:
-        lines = block.split("\n")
-        var_name = lines[0].strip()
-        var_info = {}
-        for line in lines[1:]:
-            if len(line.split(":", 1)) == 1:
-                continue
-            key, value = map(str.strip, line.split(":", 1))
-            var_info[key] = value
-        result[var_name] = var_info
-
-    state_var, inp_out_vars = OrderedDict(), OrderedDict()
-    for var in result.keys():
-        if len(var.split(".", 1)) != 2:
-            continue
-        if var.split(".", 1)[1] == "clk":
-            continue
-        if result[var]["flags"].split()[0] in ["state_var", "input", "output"]:
-            lb, ub, size, dist = 0, 1, 1, None
-            if result[var]["type"] == "bool":
-                dist = None
-            if result[var]["type"] == "unsignedbv":
-                size = int(result[var]["* width"])
-                lb = 0
-                ub = 2**size - 1
-            if result[var]["flags"].split()[0] in ["input", "output"]:
-                inp_out_vars[var.split(".", 1)[1]] = {
-                    "lb": lb,
-                    "ub": ub,
-                    "size": size,
-                    "dist": dist,
-                    "type": result[var]["flags"].split()[0],
-                }
-            else:
-                state_var[var.split(".", 1)[1]] = {
-                    "lb": lb,
-                    "ub": ub,
-                    "size": size,
-                    "dist": dist,
-                    "type": "state",
-                }
-    return state_var, inp_out_vars
-
-
-"""
-# =====================================================================
-# 					    Verilog to SMT using EBMC
-# =====================================================================
-"""
-
-
-def verilogSMT(module_name, state_vars, bits, inp_out_vars, smt2file):
-    smt2_model = smt2file.read_text()
-    # Remove the exit command
-    smt2_model = "\n".join(
-        [
-            line
-            for line in smt2_model.split("\n")
-            if not any(rem_str in line for rem_str in ["(exit)", "; end of SMT2 file"])
-        ]
-    )
-
-    state_changed = []
-    for key, value in chain(state_vars.items(), inp_out_vars.items()):
-        pre_ = f"|Verilog::{module_name}.{key}@0|"
-        curr_ = f"|Verilog::{module_name}.{key}@1|"
-        next_ = f"|Verilog::{module_name}.{key}@2|"
-        pre_bv = pre_ if value["size"] > 1 else f"(ite {pre_} (_ bv1 1) (_ bv0 1))"
-        curr_bv = curr_ if value["size"] > 1 else f"(ite {curr_} (_ bv1 1) (_ bv0 1))"
-        next_bv = next_ if value["size"] > 1 else f"(ite {next_} (_ bv1 1) (_ bv0 1))"
-        pre_B = f"|NuR::{module_name}.{key}0|"
-        curr_B = f"|NuR::{module_name}.{key}1|"
-        next_B = f"|NuR::{module_name}.{key}2|"
-
-        if value["type"] == "state":
-            assert (
-                (pre_ in smt2_model) and (curr_ in smt2_model) and (next_ in smt2_model)
-            )
-            smt2_0 = f"(declare-const {pre_B } (_ BitVec {bits}))\n(assert (= ((_ zero_extend {bits - value['size']}) {pre_bv }) {pre_B }))"
-            smt2_1 = f"(declare-const {curr_B} (_ BitVec {bits}))\n(assert (= ((_ zero_extend {bits - value['size']}) {curr_bv}) {curr_B}))"
-            smt2_2 = f"(declare-const {next_B} (_ BitVec {bits}))\n(assert (= ((_ zero_extend {bits - value['size']}) {next_bv}) {next_B}))"
-            smt2_model += "\n" + smt2_0 + "\n" + smt2_1 + "\n" + smt2_2
-
-        elif value["type"] == "input":
-            assert (pre_ in smt2_model) and (curr_ in smt2_model)
-            smt2_0 = f"(declare-const {pre_B } (_ BitVec {bits}))\n(assert (= ((_ zero_extend {bits - value['size']}) {pre_bv }) {pre_B }))"
-            smt2_1 = f"(declare-const {curr_B} (_ BitVec {bits}))\n(assert (= ((_ zero_extend {bits - value['size']}) {curr_bv}) {curr_B}))"
-            smt2_model += "\n" + smt2_0 + "\n" + smt2_1
-
-        elif value["type"] == "output":
-            assert curr_ in smt2_model
-            if next_ in smt2_model:
-                smt2_1 = f"(declare-const {curr_B} (_ BitVec {bits}))\n(assert (= ((_ zero_extend {bits - value['size']}) {curr_bv}) {curr_B}))"
-                smt2_2 = f"(declare-const {next_B} (_ BitVec {bits}))\n(assert (= ((_ zero_extend {bits - value['size']}) {next_bv}) {next_B}))"
-                smt2_model += "\n" + smt2_1 + "\n" + smt2_2
-            else:
-                smt2_1 = f"(declare-const {curr_B} (_ BitVec {bits}))\n(assert (= ((_ zero_extend {bits - value['size']}) {curr_bv}) {curr_B}))"
-                smt2_model += "\n" + smt2_1
-        else:
-            print("[INVALID Value Type]")
-            breakpoint()
-
-    smt2_model = smt2_model.replace("(assert false)", "").replace("(check-sat)", "")
-    with open(smt2file, "w") as file:
-        file.write(smt2_model)
-    # print(smt2_model)
-    curr_vars, next_vars, non_state_vars, state_names = [], [], [], []
-    tm = bw.TermManager()
-    opt = bw.Options()
-    parser = bw.Parser(tm, opt)
-    res = parser.parse(smt2file)
-    bvsizeB = tm.mk_bv_sort(bits)
-    rangesC = []
-    rangesN = []
-    bw_obj = (tm, opt, parser, bvsizeB)
-    for key, value in chain(state_vars.items(), inp_out_vars.items()):
-        if value["type"] == "state":
-            state_names.append(key)
-            cv = parser.parse_term(f"|NuR::{module_name}.{key}1|")
-            nv = parser.parse_term(f"|NuR::{module_name}.{key}2|")
-            curr_vars.append(cv)
-            next_vars.append(nv)
-            rangesN.append(b_range(next_vars[-1], bw_obj, value["lb"], value["ub"]))
-            rangesC.append(b_range(curr_vars[-1], bw_obj, value["lb"], value["ub"]))
-        elif value["type"] == "input":
-            cv = parser.parse_term(f"|NuR::{module_name}.{key}1|")
-            non_state_vars.append(cv)
-            rangesC.append(
-                b_range(non_state_vars[-1], bw_obj, value["lb"], value["ub"])
-            )
-        elif value["type"] == "output":
-            cv = parser.parse_term(f"|NuR::{module_name}.{key}1|")
-            non_state_vars.append(cv)
-            rangesC.append(
-                b_range(non_state_vars[-1], bw_obj, value["lb"], value["ub"])
-            )
-    # 0101, 1212 -> 1_delay; 1211 -> s2_lcd
-    sanityCheckRange(bw_obj, rangesC, rangesN, curr_vars, next_vars)
-    parser.bitwuzla().assert_formula(b_and(rangesC, bw_obj))
-    parser.bitwuzla().assert_formula(b_and(rangesN, bw_obj))
-    bw_obj = (tm, opt, parser, bvsizeB)
-    return bw_obj, curr_vars, next_vars, non_state_vars, state_names
-
-
-def sanityCheckRange(bw_obj, rangesC, rangesN, curr_vars, next_vars):
-    # The variable range needs to be an invariant, which means if current state satisfies range so should next state.
-    tm, opt, parser, bvsizeB = bw_obj
-    beginV = time.time()
-    parser.bitwuzla().push()
-    parser.bitwuzla().assert_formula(b_and(rangesC, bw_obj))
-    parser.bitwuzla().assert_formula(tm.mk_term(bw.Kind.NOT, [b_and(rangesN, bw_obj)]))
-    res = parser.bitwuzla().check_sat()
-    endV1 = time.time()
-    print(f"Time Range Invar: {endV1 - beginV}")
-    if res == bw.Result.UNSAT:
-        print(f"Range is an Invar [PASS]")
-    elif res == bw.Result.SAT:
-        print(f"Range is an Invar [FAIL]")
-        bitwuzla_print(curr_vars, bw_obj)
-        bitwuzla_print(next_vars, bw_obj)
-        breakpoint()
-    parser.bitwuzla().pop()
 
 
 """

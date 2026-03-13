@@ -89,12 +89,13 @@ def b_unset(arr, var, val, context):
     return tm.mk_term(bitwuzla.Kind.NOT, [b_set(arr, var, val, context)])
 
 
-def bitwuzla_print(arr, bw_obj):
+def bitwuzla_print(arr, bw_obj, *args, **kwargs):
     """Print term symbols and values or formula strings for debugging."""
     _tm, _opt, parser, _bvsizeB = bw_obj
     for ar in arr:
-        print(f" {ar.symbol()} --> {parser.bitwuzla().get_value(ar).value(10)} ")
+        value = parser.bitwuzla().get_value(ar).value(10)
+        print(f" {ar.symbol()} --> {value} ", *args, **kwargs)
 
 
-def bitwuzla_print_formula(trm):
-    print(trm.str())
+def bitwuzla_print_formula(trm, *args, **kwargs):
+    print(trm.str(), *args, **kwargs)

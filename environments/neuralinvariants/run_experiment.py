@@ -100,48 +100,16 @@ for dut_i in range(argsmodule.start_ex, len(argsmodule.N_lims)):
     svfile: Path = arguments.datapath / f"{name}.sv"
     assert svfile.exists(), f"Input file by name {svfile} cannot be found"
 
-    # Convert the .sv to smb_tab with ebmc
-    smbfile = tempdir / f"{name}_smb_tab.txt"
-    with smbfile.open("w") as f:
-        subprocess.run(
-            [
-                "ebmc",
-                svfile,
-                "--show-symbol-table",
-                "--bound",
-                "0",
-                "--top",
-                argsmodule.module_name,
-            ],
-            stdout=f,
-            check=True,
-        )
-
-    # No, we cannot do `--outfile` for the others. It only works here.
-    smt2file = tempdir / f"{name}.smt2"
-    subprocess.run(
-        [
-            "ebmc",
-            svfile,
-            "--smt2",
-            "--bound",
-            "1",
-            "--top",
-            argsmodule.module_name,
-            "--outfile",
-            smt2file,
-        ]
-    )
-
     start = perf_counter()
-    state_vars, inp_out_vars = nur.readForVars(smbfile)
-    bw_obj, curr_vars, next_vars, non_state_vars, state_names = nur.verilogSMT(
-        argsmodule.module_name,
+    (
         state_vars,
-        argsmodule.bits,
         inp_out_vars,
-        smt2file,
-    )
+        bw_obj,
+        curr_vars,
+        next_vars,
+        non_state_vars,
+        state_names,
+    ) = nur.read_svfile(svfile, argsmodule.module_name, argsmodule.bits)
     ctx = state_vars, inp_out_vars, bw_obj, argsmodule.bits
     gu_time, bw_time, guess_cnt, size_success = nur.runExperiment(
         name,
