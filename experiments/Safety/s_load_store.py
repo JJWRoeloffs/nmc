@@ -24,7 +24,6 @@ LTLSpec = (
     "LTLSPEC X G (Verilog.Load_Store.sig = TRUE  -> X X Verilog.Load_Store.sig = FALSE)"
 )
 SVSpec = "(@(posedge clk) s_nexttime (sig |-> ##2 !sig))"
-range_vals_list = ["N", "N", "N", "N"]
 
 scale = 1
 size = [2]  # [2, 1]

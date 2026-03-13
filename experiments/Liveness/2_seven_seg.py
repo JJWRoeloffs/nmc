@@ -23,7 +23,6 @@ file_name = "seven_seg"
 
 LTLSpec = "LTLSPEC F G (Verilog.SEVEN.rst = FALSE) -> ( (G F (Verilog.SEVEN.digit_select = FALSE)) & (G F (Verilog.SEVEN.digit_select = TRUE)))"
 SVSpec = "(@(posedge clk) s_eventually !rst implies ((s_eventually digit_select) and (s_eventually !digit_select)))"
-range_vals_list = ["N", "N", "N", "N", "N", "N"]
 
 scale = 1
 size = [2]  # [2]

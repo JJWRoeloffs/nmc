@@ -5,7 +5,6 @@ module_name = "BLINK"
 file_name = "blink"
 LTLSpec = "LTLSPEC F G (Verilog.BLINK.rst = FALSE) -> G F (Verilog.BLINK.led = TRUE)"
 SVSpec = "(@(posedge clk) s_eventually !rst -> led)"
-range_vals_list = ["N", "N", "N", "N", "N"]
 
 start_ex = 0
 

@@ -22,7 +22,6 @@ module_name = "DELAY"
 file_name = "delay"
 LTLSpec = "LTLSPEC X G Verilog.DELAY.err = FALSE"
 SVSpec = "(@(posedge clk) ##1 !err)"
-range_vals_list = ["N", "N", "N", "N", "N"]
 
 start_ex = 0
 scale = 1

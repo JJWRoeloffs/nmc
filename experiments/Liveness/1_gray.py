@@ -5,7 +5,6 @@ module_name = "GRAY"
 file_name = "gray"
 LTLSpec = "LTLSPEC F G (Verilog.GRAY.rst = FALSE) -> G F (Verilog.GRAY.sig = TRUE)"
 SVSpec = "(@(posedge clk) s_eventually !rst -> sig)"
-range_vals_list = ["N", "N", "N", "N", "N"]
 
 start_ex = 0
 

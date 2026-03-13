@@ -22,7 +22,6 @@ module_name = "DELAY"
 file_name = "delay"
 LTLSpec = "LTLSPEC F G (Verilog.DELAY.rst = FALSE) -> F G ((Verilog.DELAY.flg = TRUE) U (Verilog.DELAY.sig = TRUE))"
 SVSpec = "(@(posedge clk) (s_eventually always !rst) implies s_eventually always (flg s_until sig))"
-range_vals_list = ["N", "N", "N", "N", "N"]
 
 start_ex = 0
 scale = 1

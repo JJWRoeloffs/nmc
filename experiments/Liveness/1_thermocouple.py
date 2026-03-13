@@ -24,7 +24,6 @@ file_name = "thermocouple"
 
 LTLSpec = "LTLSPEC F G (Verilog.Thermocouple.rst = FALSE) -> G F (Verilog.Thermocouple.state[1] = FALSE & Verilog.Thermocouple.state[0] = TRUE)"
 SVSpec = "(@(posedge clk) s_eventually !rst -> state)"
-range_vals_list = ["N", "N", "N", "N", "N", "N", "N", "N", "N"]
 
 start_ex = 0
 scale = 1

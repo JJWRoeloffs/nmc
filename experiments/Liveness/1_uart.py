@@ -7,7 +7,6 @@ LTLSpec = (
     "LTLSPEC F G (Verilog.UART_T.rst = FALSE) -> G F (Verilog.UART_T.tx_state = FALSE)"
 )
 SVSpec = "(@(posedge clk) s_eventually !rst -> !tx_state)"
-range_vals_list = ["N", "N", "N", "N", "N", "N", "N", "N"]
 
 start_ex = 0
 scale = 1

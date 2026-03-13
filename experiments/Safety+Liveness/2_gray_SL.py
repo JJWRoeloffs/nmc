@@ -5,7 +5,6 @@ module_name = "GRAY"
 file_name = "gray"
 LTLSpec = None
 SVSpec = "(@(posedge clk) (s_eventually always !rst) implies s_eventually always (flg s_until sig))"
-range_vals_list = ["N", "N", "N", "N", "N"]
 
 start_ex = 0
 

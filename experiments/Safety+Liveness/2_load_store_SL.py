@@ -22,7 +22,6 @@ module_name = "Load_Store"
 file_name = "load_store"
 LTLSpec = "LTLSPEC G (Verilog.Load_Store.rst = FALSE) -> X G  (((Verilog.Load_Store.m = TRUE) -> (Verilog.Load_Store.sig = FALSE U (X Verilog.Load_Store.m = FALSE))))"
 SVSpec = "(@(posedge clk) (always !rst) implies s_nexttime always (m implies (!sig s_until s_nexttime !m)))"
-range_vals_list = ["N", "N", "N", "N"]
 
 scale = 1
 size = [2]  # [2, 1]

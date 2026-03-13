@@ -19,7 +19,6 @@ module_name = "PWM_TOP"
 file_name = "PWM"
 LTLSpec = "LTLSPEC X G ((Verilog.PWM_TOP.lb_pulse = TRUE -> Verilog.PWM_TOP.pulse_red = TRUE) & (Verilog.PWM_TOP.ub_pulse = FALSE -> Verilog.PWM_TOP.pulse_red = FALSE))"
 SVSpec = "(@(posedge clk) ##1 ((lb_pulse -> pulse_red) && (!ub_pulse -> !pulse_red)))"
-range_vals_list = iter(["N"] * 100)
 
 start_ex = 0
 

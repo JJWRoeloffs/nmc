@@ -5,7 +5,6 @@ module_name = "GRAY"
 file_name = "gray"
 LTLSpec = None
 SVSpec = "(@(posedge clk) (always !rst) implies s_nexttime always (cnt>0 s_until sig))"
-range_vals_list = ["N", "N", "N", "N", "N"]
 
 start_ex = 0
 

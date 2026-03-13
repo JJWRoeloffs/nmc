@@ -30,7 +30,6 @@ file_name = "i2c"
 LTLSpec = "LTLSPEC G (Verilog.i2cStrech.rst = FALSE) -> G  ((Verilog.i2cStrech.stretch = FALSE) -> (Verilog.i2cStrech.stretch = FALSE U Verilog.i2cStrech.switch_range = TRUE))"
 
 SVSpec = "(@(posedge clk) (always !rst) implies always (!stretch implies (!stretch s_until switch_range)))"
-range_vals_list = ["N", "N", "N", "N", "N", "N", "N"]
 
 start_ex = 0
 

@@ -20,7 +20,6 @@ module_name = "LCD"
 file_name = "lcd"
 LTLSpec = "LTLSPEC G ((Verilog.LCD.state[1] = TRUE & Verilog.LCD.state[0] = TRUE) -> ((Verilog.LCD.state[1] = TRUE & Verilog.LCD.state[0] = TRUE) U (Verilog.LCD.state[1] = TRUE & Verilog.LCD.state[0] = FALSE)))"
 SVSpec = "(@(posedge clk) state==3 implies (state==3 s_until state==2))"
-range_vals_list = ["N", "N", "N", "N", "N", "N", "N", "N", "N", "N"]
 
 
 start_ex = 0

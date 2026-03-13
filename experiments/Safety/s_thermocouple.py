@@ -23,7 +23,6 @@ module_name = "Thermocouple"
 file_name = "thermocouple"
 LTLSpec = "LTLSPEC X G ((Verilog.Thermocouple.spi_not_busy = TRUE & Verilog.Thermocouple.state[1] = FALSE & Verilog.Thermocouple.state[0] = TRUE & Verilog.Thermocouple.rst = FALSE) -> X (Verilog.Thermocouple.state[1] = FALSE & Verilog.Thermocouple.state[0] = TRUE))"
 SVSpec = "(@(posedge clk) spi_not_busy && (state == 1) && !rst |=> (state == 1))"
-range_vals_list = ["N", "N", "N", "N", "N", "N", "N", "N", "N"]
 
 start_ex = 0
 scale = 1

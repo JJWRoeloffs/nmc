@@ -28,7 +28,6 @@ module_name = "i2cStrech"
 file_name = "i2c"
 LTLSpec = "LTLSPEC F G ((Verilog.i2cStrech.rst = FALSE) & (Verilog.i2cStrech.scl_not_ena = FALSE)) -> G F (Verilog.i2cStrech.stretch = TRUE)"
 SVSpec = None  # "(@(posedge clk) s_eventually rst || scl_not_ena || stretch)"
-range_vals_list = ["N", "N", "N", "N", "N", "N", "N"]
 
 start_ex = 0
 

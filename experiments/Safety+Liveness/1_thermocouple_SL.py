@@ -26,7 +26,6 @@ file_name = "thermocouple"
 
 LTLSpec = "LTLSPEC  (G (Verilog.Thermocouple.rst = FALSE) -> G ( ((Verilog.Thermocouple.state[1] = TRUE & Verilog.Thermocouple.state[0] = TRUE) -> ((Verilog.Thermocouple.state[1] = TRUE & Verilog.Thermocouple.state[0] = TRUE) U (Verilog.Thermocouple.state[1] = FALSE & Verilog.Thermocouple.state[0] = TRUE))) ))"
 SVSpec = "(@(posedge clk) (always !rst) implies always (state==2 implies (state==2 s_until state==1)))"
-range_vals_list = ["N", "N", "N", "N", "N", "N", "N", "N", "N"]
 
 start_ex = 0
 scale = 1

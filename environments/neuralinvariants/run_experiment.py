@@ -91,7 +91,6 @@ for dut_i in range(argsmodule.start_ex, len(argsmodule.N_lims)):
     name = f"{argsmodule.file_name}_{dut_i+1}"
     idtxt = f"{name} ({argsmodule.specTXT}) {N_lim}"
     print(f"\t\t\t\t {idtxt}\n\t\t\t\t")
-    range_vals = iter(argsmodule.range_vals_list)
 
     tempdir = Path() / f"generated_{taskname}_neuralinvariants_{dut_i}"
     tempdir.mkdir()
@@ -105,7 +104,7 @@ for dut_i in range(argsmodule.start_ex, len(argsmodule.N_lims)):
 
     start = perf_counter()
     state_vars, inp_out_vars = nur.readForVars(
-        name, argsmodule.module_name, range_vals, svfile, smbfile
+        name, argsmodule.module_name, svfile, smbfile
     )
     bw_obj, curr_vars, next_vars, non_state_vars, state_names = nur.verilogSMT(
         name,

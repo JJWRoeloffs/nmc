@@ -10,7 +10,6 @@ LTLSpec = "LTLSPEC X G ((Verilog.VGA.disp_ena = TRUE & Verilog.VGA.rst = FALSE) 
 SVSpec = (
     "(@(posedge clk) s_nexttime (disp_ena && !rst |-> (v_sync iff s_nexttime !v_sync)))"
 )
-range_vals_list = ["N"] * 100
 
 start_ex = 0
 

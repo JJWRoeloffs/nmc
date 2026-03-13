@@ -8,7 +8,6 @@ CBITSs = [0] * len(Mults)  # Only size of array needed
 file_name = "vga"
 LTLSpec = "LTLSPEC F G (Verilog.VGA.rst = FALSE) -> G F (Verilog.VGA.disp_ena = TRUE)"
 SVSpec = "(@(posedge clk) s_eventually !rst -> disp_ena)"
-range_vals_list = ["N"] * 100
 
 start_ex = 0
 

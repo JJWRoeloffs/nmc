@@ -6,7 +6,6 @@ file_name = "blink"
 LTLSpec = "LTLSPEC G ((Verilog.BLINK.mode = TRUE & X Verilog.BLINK.mode = TRUE ) -> X Verilog.BLINK.flg = FALSE)"
 # LTLSpec = "LTLSPEC X G ((Verilog.BLINK.flg = FALSE & X Verilog.BLINK.flg = FALSE & Verilog.BLINK.rst = FALSE) -> ( (Verilog.BLINK.led = TRUE & X Verilog.BLINK.led= TRUE) | (Verilog.BLINK.led = FALSE & X Verilog.BLINK.led = FALSE) ) )"
 SVSpec = "(@(posedge clk) (mode ##1 mode |-> !flg))"
-range_vals_list = ["N", "N", "N", "N", "N", "N"]
 
 start_ex = 0
 

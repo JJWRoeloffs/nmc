@@ -8,7 +8,6 @@ CBITSs = [0] * len(Mults)  # Only size of array needed
 file_name = "vga"
 LTLSpec = "LTLSPEC X G ((Verilog.VGA.disp_ena = TRUE & Verilog.VGA.rst = FALSE) -> ((Verilog.VGA.h_sync = TRUE <-> X Verilog.VGA.h_sync = FALSE) | (Verilog.VGA.h_sync = FALSE <-> X Verilog.VGA.h_sync = TRUE)))"
 SVSpec = "(@(posedge clk)  (##1 disp_ena & !rst |-> (h_sync iff s_nexttime !h_sync) ))"
-range_vals_list = ["N"] * 100
 
 start_ex = 0
 

@@ -20,7 +20,6 @@ module_name = "LCD"
 file_name = "lcd"
 LTLSpec = "LTLSPEC X G ( X ( Verilog.LCD.state[1] = FALSE &  Verilog.LCD.state[0] = TRUE)  ->  (Verilog.LCD.busy = TRUE))"
 SVSpec = "(@(posedge clk) s_nexttime ((s_nexttime state==1) implies busy))"
-range_vals_list = ["N", "N", "N", "N", "N", "N", "N", "N", "N", "N"]
 
 
 start_ex = 0

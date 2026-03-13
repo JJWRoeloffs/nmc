@@ -8,7 +8,6 @@ CBITSs = [0] * len(Mults)  # Only size of array needed
 file_name = "vga"
 LTLSpec = "LTLSPEC G ((Verilog.VGA.v_cnt[0] = FALSE & Verilog.VGA.v_cnt[1] = FALSE & Verilog.VGA.v_cnt[2] = FALSE & Verilog.VGA.v_cnt[3] = FALSE & Verilog.VGA.v_cnt[4] = FALSE) -> ((Verilog.VGA.v_cnt[0] = FALSE & Verilog.VGA.v_cnt[1] = FALSE & Verilog.VGA.v_cnt[2] = FALSE & Verilog.VGA.v_cnt[3] = FALSE & Verilog.VGA.v_cnt[4] = FALSE) U (Verilog.VGA.h_cnt[0] = FALSE & Verilog.VGA.h_cnt[1] = FALSE & Verilog.VGA.h_cnt[2] = FALSE & Verilog.VGA.h_cnt[3] = FALSE & Verilog.VGA.h_cnt[4] = FALSE & Verilog.VGA.h_cnt[5] = FALSE & Verilog.VGA.h_cnt[6] = FALSE)))"
 SVSpec = "(@(posedge clk) v_cnt==0 implies (v_cnt==0 s_until h_cnt==0))"
-range_vals_list = ["N"] * 100
 
 start_ex = 0
 

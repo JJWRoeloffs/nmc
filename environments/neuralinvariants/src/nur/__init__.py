@@ -72,14 +72,12 @@ Logging:
 
 import os
 import time
-import math
-import re
 import random
+from typing import Iterable
 import numpy as np
-import multiprocessing
 from collections import OrderedDict
 from itertools import chain, product
-from colorama import init, Fore, Back, Style
+from colorama import Fore, Style
 from pathlib import Path
 
 import bitwuzla as bw
@@ -114,7 +112,7 @@ norm_range = 100
 """
 
 
-def readForVars(name, module_name, shell_inputs: Path, svfile: Path, smb_tabfile):
+def readForVars(name, module_name, svfile: Path, smb_tabfile):
     os.system(
         f"ebmc {svfile} --show-symbol-table --bound 0 --top {module_name} > {smb_tabfile}"
     )
@@ -143,55 +141,13 @@ def readForVars(name, module_name, shell_inputs: Path, svfile: Path, smb_tabfile
         if var.split(".", 1)[1] == "clk":
             continue
         if result[var]["flags"].split()[0] in ["state_var", "input", "output"]:
-
             lb, ub, size, dist = 0, 1, 1, None
             if result[var]["type"] == "bool":
-                ap = (
-                    input(f"Special Distribution for {var}? [Y/N]: ")
-                    if shell_inputs is None
-                    else next(shell_inputs)
-                )
-                if ap in ["y", "Y"]:
-                    p = (
-                        int(input(f"Enter p value for {var}? [Int or 1/Int]: "))
-                        if shell_inputs is None
-                        else int(next(shell_inputs))
-                    )
-                    if int(p) < 1:
-                        print("NOT SUPPORTED YET")
-                    else:
-                        dist = int(p)
-                elif ap in ["n", "N"]:
-                    dist = None
-                else:
-                    print("INVALID INPUT")
-                    breakpoint()
-                    exit()
+                dist = None
             if result[var]["type"] == "unsignedbv":
                 size = int(result[var]["* width"])
-                ap = (
-                    input(f"Specify Lower and Upper bound for {var}? [Y/N]: ")
-                    if shell_inputs is None
-                    else next(shell_inputs)
-                )
-                if ap in ["y", "Y"]:
-                    lb = (
-                        int(input(f"Lower Bound for {var}? [Unsigned Int]: "))
-                        if shell_inputs is None
-                        else int(next(shell_inputs))
-                    )
-                    ub = (
-                        int(input(f"Upper Bound for {var}? [Unsigned Int]: "))
-                        if shell_inputs is None
-                        else int(next(shell_inputs))
-                    )
-                elif ap in ["n", "N"]:
-                    lb = 0
-                    ub = 2**size - 1
-                else:
-                    print("INVALID INPUT")
-                    breakpoint()
-                    exit()
+                lb = 0
+                ub = 2**size - 1
             if result[var]["flags"].split()[0] in ["input", "output"]:
                 inp_out_vars[var.split(".", 1)[1]] = {
                     "lb": lb,

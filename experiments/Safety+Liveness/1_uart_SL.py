@@ -5,7 +5,6 @@ module_name = "UART_T"
 file_name = "uart_transmit"
 LTLSpec = "LTLSPEC G (Verilog.UART_T.rst = FALSE) -> G  ((Verilog.UART_T.tx_busy = TRUE) -> (Verilog.UART_T.tx_busy = TRUE U Verilog.UART_T.tx_state = FALSE))"
 SVSpec = "(@(posedge clk) (always !rst) implies always (tx_busy implies (tx_busy s_until !tx_state)))"
-range_vals_list = ["N", "N", "N", "N", "N", "N", "N", "N"]
 
 start_ex = 0
 scale = 1

@@ -20,7 +20,6 @@ module_name = "LCD"
 file_name = "lcd"
 LTLSpec = "LTLSPEC X G (Verilog.LCD.lcd_enable = FALSE & Verilog.LCD.state[1] = TRUE & Verilog.LCD.state[0] = FALSE) -> X (Verilog.LCD.state[1] = TRUE & Verilog.LCD.state[0] = FALSE)"
 SVSpec = "(@(posedge clk) !lcd_enable && state==2 |=> state==2)"
-range_vals_list = ["N", "N", "N", "N", "N", "N", "N", "N", "N", "N"]
 
 
 start_ex = 0
