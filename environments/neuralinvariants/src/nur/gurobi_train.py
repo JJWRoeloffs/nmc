@@ -66,7 +66,7 @@ Evaluation Functions (Debug):
 import gurobipy as gp
 from gurobipy import GRB
 import numpy as np
-from colorama import init, Fore, Back, Style
+from colorama import Fore, Style
 
 M_enc = False
 
@@ -188,7 +188,7 @@ class MIPLearn:
         self.ptype = ptype
         self.accept = accept
         if len(size) == 1:
-            self.nnparam = [None for i in range(len(accept))]
+            self.nnparam = [None for _ in range(len(accept))]
         else:
             self.nnparam = [
                 addNNParam(self.m, size, vtype=ptype, lb=-P, ub=P, psfx="q" + str(i))
@@ -261,7 +261,7 @@ class MIPLearn:
         )
 
         M_out = 2 * self.M * self.P * len(samples[0][1])
-        for i, (q, s, q_next, s_next) in enumerate(samples):
+        for q, s, q_next, s_next in samples:
             z = self.m.addVar(vtype=GRB.BINARY, name=f"z_{q}_{s}_{q_next}_{s_next}")
             V, V_next = self.getV(q, s), self.getV(q_next, s_next)
             if M_enc:
@@ -283,7 +283,7 @@ class MIPLearn:
         if len(samples) == 0:
             return
 
-        for i, (q, s) in enumerate(samples):
+        for q, s in samples:
             V = self.getV(q, s)
             self.m.addConstr(V <= self.kappa)
 
@@ -296,7 +296,7 @@ class MIPLearn:
             return
         assert len(sink) > 0
 
-        for i, (q, s) in enumerate(sink):
+        for q, s in sink:
             V = self.getV(q, s)
             self.m.addConstr(V <= min_rank)
 
@@ -434,17 +434,6 @@ def gurobiNNtrain(
     gap,
     kappa,
 ):
-    # scale = .01
-    # P = 20000.
-    M = 1 + int(
-        max(
-            abs(element)
-            for sample in samples
-            for array in [sample[1], sample[3]]
-            for element in array
-        )
-    )
-
     print(20 * "=")
     print(" guess #", try_i)
     print(" Engine : Gurobi")
@@ -525,14 +514,3 @@ def gurobiNNtrain(
     print(" checking")
     print(20 * "=")
     return nnparam, linparam, kappa, best_F
-    """
-    cex = check(nnparam, linparam, scale, N)
-
-    if len(cex) == 0:
-        print('Yay! We\'ve got a ranking function')
-        break
-
-    assert not any(c in samples for c in cex)
-    samples += cex
-    assert (print(20*'='+'\n always remember to use the -O flag when measuring time\n'+20*'=') or True)
-    """

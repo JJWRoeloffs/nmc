@@ -17,6 +17,8 @@ bits: int
     blah
 F_prec: int
     blah
+is_acc: list[int]
+    blah
 init_samp: list[tuple[int, list[float]]]
 spec_automata: Callable
     blah
@@ -29,7 +31,6 @@ gap float
 """
 
 import argparse
-import subprocess
 import importlib.util
 from pathlib import Path
 from time import perf_counter
