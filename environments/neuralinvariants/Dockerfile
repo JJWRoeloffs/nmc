@@ -24,7 +24,7 @@ RUN rm -r ./mpfr-4.2.1
 
 RUN apt-get update -y && apt-get install -y build-essential pkg-config ninja-build libgtest-dev
 RUN /opt/venv/bin/python3 -m pip install cmake meson ninja cython
-RUN git clone https://github.com/bitwuzla/bitwuzla --depth=1  && cd bitwuzla && /opt/venv/bin/python3 ./configure.py debug && cd build && /opt/venv/bin/meson test
+RUN git clone https://github.com/bitwuzla/bitwuzla && cd bitwuzla && git checkout 1177124ddc7e6ea9ce7eaf464da199d141146f04 && /opt/venv/bin/python3 ./configure.py debug && cd build && /opt/venv/bin/meson test
 RUN /opt/venv/bin/python3 -m pip install ./bitwuzla
 
 COPY ./gurobi.lic ./
@@ -32,6 +32,9 @@ RUN apt-get update -y && apt-get install -y z3 cvc5
 RUN /opt/venv/bin/python3 -m pip install setuptools gurobipy
 RUN /opt/venv/bin/python3 -m pip install pysmt --pre && pysmt-install --confirm-agreement --msat
 RUN pysmt-install --confirm-agreement --z3 --cvc5
+
+COPY ./requirements.txt ./
+RUN /opt/venv/bin/python3 -m pip install -r ./requirements.txt
 
 COPY ./ ./
 RUN /opt/venv/bin/python3 -m pip install .

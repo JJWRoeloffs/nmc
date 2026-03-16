@@ -1,12 +1,12 @@
 FROM ubuntu:18.04 AS provebuilder
 WORKDIR /root/
 RUN apt-get update -y && apt-get install -y cmake ninja-build g++ python-dev python-setuptools python-pip git zlib1g-dev
-RUN git clone --recursive https://github.com/sterin/super-prove-build --depth=1 && cd super-prove-build && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -G Ninja .. && ninja && ninja package
+RUN git clone --recursive https://github.com/sterin/super-prove-build && cd super-prove-build && git checkout c7a4df4f60b9fe847f673b566c9a4fb4f71f4181 && mkdir build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -G Ninja .. && ninja && ninja package
 
 FROM ubuntu:20.04 AS aigerbuilder
 WORKDIR /root/
 RUN apt-get update -y && apt-get install -y git build-essential
-RUN git clone https://github.com/zimmski/aiger.git --depth=1 && cd aiger && ./configure && make
+RUN git clone https://github.com/zimmski/aiger.git && cd aiger && git checkout ba826db1798022fdabe2de71ea173bd2b6dcac9d && ./configure && make
 
 FROM ubuntu:20.04
 WORKDIR /root/
