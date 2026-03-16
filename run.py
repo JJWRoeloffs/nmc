@@ -7,7 +7,6 @@ Done in Python instead of Makefile because... you know what? Let's forget it.
 """
 from __future__ import annotations
 
-import os
 import sys
 import signal
 import atexit
@@ -115,9 +114,7 @@ def run_experiments(environment: str, experiment: Iterable[Path], *args: str):
         if filename.suffix != ".py":
             print(f"{filename} is not a python file. Skipping.")
             continue
-        logfile_dir = RESULTS_DIR / filename.parent.name
-        logfile_dir.mkdir(exist_ok=True)
-        with open(logfile_dir / f"{filename.stem}_{environment}.log", "w") as logfile:
+        with open(RESULTS_DIR / f"{environment}_{filename.stem}.log", "w") as logfile:
             docker(
                 "exec",
                 "-i",
@@ -131,13 +128,12 @@ def run_experiments(environment: str, experiment: Iterable[Path], *args: str):
                 *args,
                 logfile=logfile,
             )
-        if os.name != "nt":
-            st = RESULTS_DIR.stat()
-            docker(
-                "exec",
-                containername(environment),
-                "chown",
-                "-R",
-                f"{st.st_uid}:{st.st_gid}",
-                "/root/results/",
-            )
+        st = RESULTS_DIR.stat()
+        docker(
+            "exec",
+            containername(environment),
+            "chown",
+            "-R",
+            f"{st.st_uid}:{st.st_gid}",
+            "/root/results/",
+        )
