@@ -54,7 +54,7 @@ parser.add_argument(
     "--learning_engine", choices=["gurobi", "cvc5", "z3", "msat"], default="gurobi"
 )
 parser.add_argument("--unbounded", action="store_true")
-parser.add_argument("--auto", action="store_true")
+parser.add_argument("--linear", action="store_true")
 arguments = parser.parse_args()
 print(f"Starting neuralinvariants test with {arguments.runargs_path}")
 if arguments.learning_engine == "gurobi" and arguments.unbounded:
@@ -130,11 +130,11 @@ for dut_i in range(argsmodule.start_ex, len(argsmodule.N_lims)):
         state_names,
         arguments.samples,
         arguments.learning_engine,
-        arguments.auto,
+        not arguments.linear,
     )
     duration = perf_counter() - start
     print(
-        f"BITS ---------->>>>>>>>> {argsmodule.bits} {idtxt} E: {arguments.learning_engine} P: {P} RndSmps: {arguments.samples} isAuto: {arguments.auto} Arch: {size_success}"
+        f"BITS ---------->>>>>>>>> {argsmodule.bits} {idtxt} E: {arguments.learning_engine} P: {P} RndSmps: {arguments.samples} isAuto: {not arguments.linear} Arch: {size_success}"
     )
     print(f"Learn Time: {gu_time}; Check Time: {bw_time}; Guess cnt: {guess_cnt}")
     print(f"Total Time: {duration}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
