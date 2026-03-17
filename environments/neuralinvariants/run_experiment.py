@@ -64,7 +64,7 @@ taskname = arguments.runargs_path.stem
 
 # This forces us to always have a new results directory, not passing exists_ok
 # It's not the most convenient, but a lot safer than accedentally overwriting results
-resultspath = arguments.resultspath / f"ebmc_{taskname}"
+resultspath = arguments.resultspath / f"neuralinvariants_{taskname}"
 resultspath.mkdir()
 
 
@@ -94,8 +94,8 @@ for dut_i in range(argsmodule.start_ex, len(argsmodule.N_lims)):
     idtxt = f"{name} ({argsmodule.specTXT}) {N_lim}"
     print(f"\t\t\t\t {idtxt}\n\t\t\t\t")
 
-    tempdir = Path() / f"generated_{taskname}_neuralinvariants_{dut_i}"
-    tempdir.mkdir()
+    tempdir = Path(f"./generated/{taskname}_neuralinvariants_{dut_i}")
+    tempdir.mkdir(parents=True)
 
     # Add the SVSpec to the target file
     svfile: Path = arguments.datapath / f"{name}.sv"

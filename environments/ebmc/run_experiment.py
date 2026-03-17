@@ -64,8 +64,8 @@ for dut_i in range(argsmodule.start_ex, len(argsmodule.N_lims)):
 
     # Since we will be moving files around with ebmc and such, we need some unique temp dir.
     # Not using TemporaryDirectory because I'm not sure if it has overhead. It's containerised anyway.
-    tempdir = Path() / f"generated_{taskname}_ebmc_{dut_i}"
-    tempdir.mkdir()
+    tempdir = Path(f"./generated/{taskname}_ebmc_{dut_i}")
+    tempdir.mkdir(parents=True)
 
     # Add the SVSpec to the target file
     sourcepath: Path = arguments.datapath / f"{name}.sv"
