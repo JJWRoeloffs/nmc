@@ -30,6 +30,8 @@ from nur.bitwuzla_utils import (
     to_decimal,
 )
 
+from nur.check_with_nuxmv import NuXMVChecker, bw_to_verlog
+
 from typing import Callable, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -231,6 +233,11 @@ def check_tran(
 
     res = parser.bitwuzla().check_sat()
     if res == bitwuzla.Result.SAT:
+        NuXMVChecker.check_state_unreachable(
+            [bw_to_verlog(str(x)) for x in curr_vars],
+            [bw_to_verlog(str(x)) for x in next_vars],
+            [bw_to_verlog(str(x)) for x in non_state_vars],
+        )
         c_cur = np.array(b_int(curr_vars, bw_obj, bits))
         c_nex = np.array(b_int(next_vars, bw_obj, bits))
         cex_trans.append((q_cur, c_cur, q_nex, c_nex))

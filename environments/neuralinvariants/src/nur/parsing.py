@@ -7,6 +7,7 @@ from itertools import chain
 import bitwuzla
 
 from nur.bitwuzla_utils import b_and, b_range
+from nur.check_with_nuxmv import NuXMVChecker
 
 
 # TODO: Figure out how to read the other inputs from the file.
@@ -18,6 +19,7 @@ def read_svfile(svfile: Path, module_name: str, bits: int):
     It's far from pretty, and I would have presumed just writing a parser from scratch might be easier,
     but it works and I am not going to change it as I don't plan on touching it anyway.
     """
+    NuXMVChecker.set_basefile(svfile)
     smb_out = subprocess.check_output(
         ["ebmc", svfile, "--show-symbol-table", "--bound", "0", "--top", module_name]
     )

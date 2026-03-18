@@ -36,5 +36,7 @@ RUN pysmt-install --confirm-agreement --z3 --cvc5
 COPY ./requirements.txt ./
 RUN /opt/venv/bin/python3 -m pip install -r ./requirements.txt
 
+RUN wget https://nuxmv.fbk.eu/theme/download.php?file=nuXmv-2.0.0-linux64.tar.gz && tar -xzf download.php?file=nuXmv-2.0.0-linux64.tar.gz && mv nuXmv-2.0.0-Linux/bin/* /usr/local/bin && rm -rf download.php?file=nuXmv-2.0.0-linux64.tar.gz nuXmv-2.0.0-Linux
+
 COPY ./ ./
 RUN /opt/venv/bin/python3 -m pip install .
