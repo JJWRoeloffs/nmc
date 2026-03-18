@@ -2,8 +2,13 @@ import math
 
 import bitwuzla
 
+from typing import Any
 
-def b_mul(bvar, number, bw_obj, bvsizeB_larger, dpt):
+BwObj = tuple[bitwuzla.TermManager, bitwuzla.Options, bitwuzla.Parser, bitwuzla.Sort]
+BwContext = tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]], BwObj, int]
+
+
+def b_mul(bvar, number, bw_obj: BwObj, bvsizeB_larger, dpt):
     """
     Perform constant multiplication via recursive shift-and-add decomposition.
     Handles positive/negative factors by splitting into power-of-two and bias.
@@ -36,7 +41,7 @@ def b_mul(bvar, number, bw_obj, bvsizeB_larger, dpt):
         )
 
 
-def b_dot_positive(arrVar, arrNum, bw_obj, F_prec, bits):
+def b_dot_positive(arrVar, arrNum, bw_obj: BwObj, F_prec, bits):
     """
     Separates positive and negative coefficients, computes two dot-products,
     and subtracts negative sum from positive sum.
@@ -55,7 +60,7 @@ def b_dot_positive(arrVar, arrNum, bw_obj, F_prec, bits):
     return tm.mk_term(bitwuzla.Kind.BV_SUB, [posDot, negDot])
 
 
-def b_dot_new(arrVar, arrNum, bw_obj, F_prec, bits):
+def b_dot_new(arrVar, arrNum, bw_obj: BwObj, F_prec, bits):
     """
     Balanced recursive summation of term-by-term multiplications.
     For single-element lists, extends and shifts for fixed-point precision.
@@ -108,7 +113,7 @@ def b_elem_mul(bw_obj, mat1, scaled_weight, F_prec, bits, isDebug=False):
     return out
 
 
-def b_sum(arrVar, bw_obj, F_prec, bits):
+def b_sum(arrVar, bw_obj: BwObj, F_prec, bits):
     """
     Balanced tree addition of BV terms for efficient summing.
     """
@@ -128,7 +133,7 @@ def b_sum(arrVar, bw_obj, F_prec, bits):
     )
 
 
-def b_sign_func(bw_obj, arrVar, bits, isLast, F_prec, gap):
+def b_sign_func(bw_obj: BwObj, arrVar, bits, isLast, F_prec, gap):
     """
     Compute discrete sign values (+1, 0, -1) for each term based on MSB
     and a gap threshold using ITE constructs.
@@ -170,7 +175,7 @@ def b_sign_func(bw_obj, arrVar, bits, isLast, F_prec, gap):
     return signs
 
 
-def set_lhs_state(var, val, bw_obj):
+def set_lhs_state(var, val, bw_obj: BwObj):
     """
     Build a balanced conjunction of BV equalities to assign values to state bits
     [for random sample ablation study].
@@ -184,7 +189,7 @@ def set_lhs_state(var, val, bw_obj):
     )
 
 
-def b_range(var, bw_obj, lb, ub):
+def b_range(var, bw_obj: BwObj, lb, ub):
     """Constrain a BitVec term within [lb, ub] using BV_UGE and BV_ULE."""
     tm, _opt, _parser, bvsizeB = bw_obj
     l1 = tm.mk_term(bitwuzla.Kind.BV_UGE, [var, tm.mk_bv_value(bvsizeB, lb)])
@@ -192,7 +197,7 @@ def b_range(var, bw_obj, lb, ub):
     return tm.mk_term(bitwuzla.Kind.AND, [l1, u1])
 
 
-def b_and(arr, bw_obj):
+def b_and(arr, bw_obj: BwObj):
     """Recursively assemble balanced AND/OR trees over lists of terms."""
     tm, _opt, _parser, _bvsizeB = bw_obj
     if len(arr) == 1:
@@ -205,7 +210,7 @@ def b_and(arr, bw_obj):
     )
 
 
-def b_or(arr, bw_obj):
+def b_or(arr, bw_obj: BwObj):
     """Create a disjunction of conjunctions for 2D arrays of terms."""
     tm, _opt, _parser, _bvsizeB = bw_obj
     if len(arr) == 1:
@@ -218,7 +223,7 @@ def b_or(arr, bw_obj):
     )
 
 
-def b_or_of_and(arr2D, bw_obj):
+def b_or_of_and(arr2D, bw_obj: BwObj):
     """Decode Bitwuzla BitVec results into Python integers (b_int’s complement)."""
     arr1D = []
     for arr in arr2D:
@@ -226,21 +231,21 @@ def b_or_of_and(arr2D, bw_obj):
     return b_or(arr1D, bw_obj)
 
 
-def b_int(arr, bw_obj, bits):
+def b_int(arr, bw_obj: BwObj, bits):
     arr2 = []
     for i in range(len(arr)):
         arr2.append(to_decimal(arr[i], bw_obj, bits))
     return arr2
 
 
-def to_decimal(x, bw_obj, bits):
+def to_decimal(x, bw_obj: BwObj, bits):
     _tm, _opt, parser, _bvsizeB = bw_obj
     val = int(parser.bitwuzla().get_value(x).value(10))
     s = 1 << (bits - 1)
     return (val & s - 1) - (val & s)
 
 
-def b_set(arr, var, val, context):
+def b_set(arr, var, val, context: BwContext):
     """Generate (or negate) equality constraints for named state/input variables."""
     state_vars, inp_out_vars, bw_obj, _bits = context
     tm, _opt, _parser, bvsizeB = bw_obj
@@ -252,13 +257,13 @@ def b_set(arr, var, val, context):
     )
 
 
-def b_unset(arr, var, val, context):
+def b_unset(arr, var, val, context: BwContext):
     _state_vars, _inp_out_vars, bw_obj, _bits = context
     tm, _opt, _parser, _bvsizeB = bw_obj
     return tm.mk_term(bitwuzla.Kind.NOT, [b_set(arr, var, val, context)])
 
 
-def bitwuzla_print(arr, bw_obj, *args, **kwargs):
+def bitwuzla_print(arr, bw_obj: BwObj, *args, **kwargs):
     """Print term symbols and values or formula strings for debugging."""
     _tm, _opt, parser, _bvsizeB = bw_obj
     for ar in arr:

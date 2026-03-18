@@ -50,15 +50,9 @@ parser.add_argument("runargs_path", type=existing_path)
 parser.add_argument("datapath", type=existing_path)
 parser.add_argument("resultspath", type=existing_path)
 parser.add_argument("--samples", type=int, default=0)
-parser.add_argument(
-    "--learning_engine", choices=["gurobi", "cvc5", "z3", "msat"], default="gurobi"
-)
-parser.add_argument("--unbounded", action="store_true")
 parser.add_argument("--linear", action="store_true")
 arguments = parser.parse_args()
 print(f"Starting neuralinvariants test with {arguments.runargs_path}")
-if arguments.learning_engine == "gurobi" and arguments.unbounded:
-    parser.error("Gurobi cannot be run with unbounded parameters")
 
 taskname = arguments.runargs_path.stem
 
@@ -77,10 +71,7 @@ assert spec.loader is not None, "The passed runargs is a runnable loader, but no
 argsmodule = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(argsmodule)
 
-if arguments.unbounded:
-    ps = [None] * len(argsmodule.Ps)
-else:
-    ps = argsmodule.Ps
+ps = argsmodule.Ps
 
 gu_times, bw_times, total_times, guess_cnts = [], [], [], []
 
@@ -112,7 +103,7 @@ for dut_i in range(argsmodule.start_ex, len(argsmodule.N_lims)):
         state_names,
     ) = nur.read_svfile(svfile, argsmodule.module_name, argsmodule.bits)
     ctx = state_vars, inp_out_vars, bw_obj, argsmodule.bits
-    gu_time, bw_time, guess_cnt, size_success = nur.runExperiment(
+    gu_time, bw_time, guess_cnt, size_success = nur.run_experiment(
         name,
         hyperparameters,
         bw_obj,
@@ -129,12 +120,11 @@ for dut_i in range(argsmodule.start_ex, len(argsmodule.N_lims)):
         state_vars,
         state_names,
         arguments.samples,
-        arguments.learning_engine,
         not arguments.linear,
     )
     duration = perf_counter() - start
     print(
-        f"BITS ---------->>>>>>>>> {argsmodule.bits} {idtxt} E: {arguments.learning_engine} P: {P} RndSmps: {arguments.samples} isAuto: {not arguments.linear} Arch: {size_success}"
+        f"BITS ---------->>>>>>>>> {argsmodule.bits} {idtxt} E: gurobi P: {P} RndSmps: {arguments.samples} isAuto: {not arguments.linear} Arch: {size_success}"
     )
     print(f"Learn Time: {gu_time}; Check Time: {bw_time}; Guess cnt: {guess_cnt}")
     print(f"Total Time: {duration}\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")

@@ -1,93 +1,25 @@
 """
 CAV-NUR -> Computer Aided Verification using Neural Reasoning.
-===============================
-
-This module provides ulilities for neural model checking of Verilog designs.
-
-Global Constants:
-  - colors: ANSI palettes for console output (Fore.*).
-
-Primary Functions:
-
-11. random_lhs_set(state_vars, state_names, curr_vars, bw_obj)
-    • Sample random assignments for state variables and return assignment + term.
-
-12. get_first_samples(...)
-    • Collect initial SAT transitions without random inputs as sample tuples.
-
-13. get_random_samples(...)
-    • Collect random SAT/UNSAT transitions under random LHS sampling.
-
-14. fake_cex_check(samples, cex_list)
-    • Ensure no duplicate counterexamples between existing samples and new cex.
-
-15. train_an_nrf(bw_obj, hyperparams, samples, init_samp, ..., engine, isAuto)
-    • Train neural ranking/invariant functions with Gurobi or SMT-based learner.
-    • Alternate training (nnparam) and verification (gurobi_check.check), collect timings.
-    • Return (training_time, checking_time, iterations) or (None,None,iter) on failure.
-
-16. runExperiment(name, hyperparams, bw_obj, curr_vars, next_vars, non_state_vars,
-    spec_automata, ctx, F_prec, bits, is_acc, init_samp, is_init,
-    state_vars, state_names, rnd_smpC, engine, isAuto)
-    • Orchestrate the full workflow: initial+random sampling, training loop,
-      optional auto-architecture growth, return final metrics and model size.
-
-Logging:
-  • All timing data, counterexamples, and status messages are appended to `data.txt`.
-  • Progress and debug prints appear on stdout with colorized output.
-
 """
 
-import time
-import random
-import numpy as np
-from collections import OrderedDict
-from itertools import chain, product
-from colorama import Fore, Style
-from pathlib import Path
+from __future__ import annotations
 
+import random
+from time import perf_counter
+from itertools import product
+
+import numpy as np
 import bitwuzla as bw
+from colorama import Fore, Style
 
 from nur import gurobi_check
 from nur import gurobi_train
-from nur import smt_train
-from nur.bitwuzla_utils import (
-    set_lhs_state,
-    b_range,
-    b_and,
-    b_int,
-    bitwuzla_print,
-)
+from nur.bitwuzla_utils import set_lhs_state, b_and, b_int
 from nur.parsing import read_svfile
-
-colours = [
-    Fore.RED,
-    Fore.GREEN,
-    Fore.YELLOW,
-    Fore.BLUE,
-    Fore.MAGENTA,
-    Fore.CYAN,
-    Fore.WHITE,
-    Fore.LIGHTRED_EX,
-    Fore.LIGHTGREEN_EX,
-    Fore.LIGHTYELLOW_EX,
-    Fore.LIGHTBLUE_EX,
-    Fore.LIGHTMAGENTA_EX,
-    Fore.LIGHTCYAN_EX,
-]
-delta = 1e-2
-col_num = len(colours)
-norm_range = 100
-
-
-"""
-# =====================================================================
-# 			 Run Neural Model Checking (main-functions)
-# =====================================================================
-"""
 
 
 def random_lhs_set(state_vars, state_names, curr_vars, bw_obj):
+    """Sample random assignments for state variables and return assignment + term."""
     val = []
     for state in state_names:
         lb, ub = state_vars[state]["lb"], state_vars[state]["ub"]
@@ -109,6 +41,7 @@ def get_random_samples(
     state_names,
     rnd_smpC,
 ):
+    """Collect random SAT/UNSAT transitions under random LHS sampling."""
     tm, opt, parser, bvsizeB = bw_obj
     print(20 * "=")
     print("Random Samples")
@@ -155,6 +88,7 @@ def get_first_samples(
     state_vars,
     state_names,
 ):
+    """Collect initial SAT transitions without random inputs as sample tuples."""
     tm, opt, parser, bvsizeB = bw_obj
     print(20 * "=")
     print("Initial Samples")
@@ -184,6 +118,7 @@ def get_first_samples(
 
 
 def fake_cex_check(samples, cex):
+    """Ensure no duplicate counterexamples between existing samples and new cex."""
     for ce in cex:
         for sample in samples:
             cnd = (
@@ -212,60 +147,42 @@ def train_an_nrf(
     is_acc,
     q_set,
     is_init,
-    engine="gurobi",
     isAuto=True,
 ):
+    """
+    Train neural ranking/invariant functions with Gurobi or SMT-based learner.
+    Alternate training (nnparam) and verification (gurobi_check.check), collect timings.
+    Return (training_time, checking_time, iterations) or (None,None,iter) on failure.
+    """
     scale, P, size, gap, M, kappa = hyperparameters
-    success = False
     bw_time = 0
     gu_time = 0
     cex = samples
     cex_init = init_samp
-    if engine == "gurobi":
-        mipL = gurobi_train.MIPLearn(is_acc, size=size, P=P, M=M)
-    else:
-        smtL = smt_train.SMTLearn(is_acc, size=size, P=P, M=M)
+    mipL = gurobi_train.MIPLearn(is_acc, size=size, P=P, M=M)
     for try_i in range(5000):
-        begin = time.time()
-        if engine == "gurobi":
-            nnparam, linparam, kappa, best_F = gurobi_train.gurobiNNtrain(
-                try_i,
-                mipL,
-                cex,
-                cex_init,
-                samples,
-                init_samp,
-                scale,
-                P,
-                is_acc,
-                size,
-                gap,
-                kappa,
-            )
-        else:
-            nnparam, linparam, kappa, best_F = smt_train.smtNNtrain(
-                try_i,
-                smtL,
-                cex,
-                cex_init,
-                samples,
-                init_samp,
-                scale,
-                P,
-                is_acc,
-                size,
-                gap,
-                kappa,
-                engine,
-            )
+        begin = perf_counter()
+        nnparam, linparam, kappa, best_F = gurobi_train.gurobi_nn_train(
+            try_i,
+            mipL,
+            cex,
+            cex_init,
+            samples,
+            init_samp,
+            scale,
+            P,
+            is_acc,
+            size,
+            gap,
+            kappa,
+        )
         if nnparam == None:
-            return None, None, None
+            return None, None, try_i
         F_prec = best_F  # max(best_F, F_prec)
         print(f"PRECISION: {F_prec}")
-        end = time.time()
-        gu_time += end - begin
+        gu_time += perf_counter() - begin
 
-        begin = time.time()
+        begin = perf_counter()
         cex = gurobi_check.check(
             nnparam,
             linparam,
@@ -297,10 +214,8 @@ def train_an_nrf(
             ctx,
             kappa,
         )
-        end = time.time()
-        bw_time += end - begin
+        bw_time += perf_counter() - begin
         if (len(cex) + len(cex_init)) == 0:
-            success = True
             print(
                 f"{Fore.GREEN}\t*********  Yay! We've got a ranking function.  ************{Style.RESET_ALL}"
             )
@@ -309,14 +224,14 @@ def train_an_nrf(
         # new_samples = cex
         samples += cex
         init_samp += cex_init
-    if not success:
+    else:
         print(
             f"{Fore.RED}\t*********  Ranking Function training Failed!  ************{Style.RESET_ALL}"
         )
     return gu_time, bw_time, try_i
 
 
-def runExperiment(
+def run_experiment(
     name,
     hyperparameters,
     bw_obj,
@@ -333,9 +248,12 @@ def runExperiment(
     state_vars,
     state_names,
     rnd_smpC,
-    engine,
     isAuto,
 ):
+    """
+    Orchestrate the full workflow: initial+random sampling, training loop,
+    optional auto-architecture growth, return final metrics and model size.
+    """
     init_samp = [(x, np.array(xs)) for x, xs in init_samp]
     scale, P, size, gap, M, kappa = hyperparameters
     seed = 2
@@ -385,7 +303,6 @@ def runExperiment(
             is_acc,
             q_set,
             is_init,
-            engine,
         )
         if gu_time == None and isAuto == True:
             size = [size[0], 1 if len(size) == 1 else (size[1] + 1)]
@@ -395,3 +312,6 @@ def runExperiment(
         else:
             break
     return gu_time, bw_time, guess_cnt, size
+
+
+__all__ = ("run_experiment", "read_svfile")

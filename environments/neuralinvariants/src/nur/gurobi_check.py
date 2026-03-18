@@ -5,45 +5,19 @@ Bitwuzla Neural Arithmetic Utilities & Check Phase
 This module implements efficient bit-vector arithmetic primitives and neural
 network quantization routines using Bitwuzla as the SMT backend.
 (note: quantization is switched of for current version as we use integer)
-
-Miscellaneous Helpers:
-  - bShiftInc(arr, F_prec, bw_obj): Left-shift array elements by F_prec bits.
-  - bMat(mat, bw_obj) / bVec(vec, bw_obj): Convert Python matrices/vectors to
-    BV constant arrays.
-  - bAnd(arr, bw_obj): Balanced conjunction over a list of terms.
-  - bv2int(arr, bw_obj, bits) / todecimal(...): Decode BV terms to Python ints.
-  - BLessThan / BLessThanEq / BLessThanEps: Comparison predicates over BV ranks.
-  - bSetListUnEqual: Assert inequality between lists of BV values.
-
-Neural Ranking Routines:
-  - bLinear(bw_obj, W, b, inp, F_prec, bits, isDebug=False)
-    • One-layer quantized neural inference: W*x + b.
-  - bSignNN(bw_obj, param, x, F_prec, bits, gap, isDebug)
-    • Multi-layer sign activation network producing binary masks.
-  - bCAV_NRF(bw_obj, nnparam, clparam, inp, scale, F_prec, bits, gap, isDebug)
-    • Combine quantized linear and sign networks to compute a ranking function.
-
-Transition Checking:
-  - check_tran(...)
-    • Assert transition relation, ranking constraints, and collect SAT counterexamples.
-  - check(...)
-    • Iterate over all state-pair transitions to gather violations.
-  - check_init(...)
-    • Verify initial-state ranking precondition to gather violations.
-
 """
+
+import math
+import warnings
+from itertools import product
+
+warnings.filterwarnings("ignore")
 
 import bitwuzla
 import numpy as np
-import math
-import warnings
-
-warnings.filterwarnings("ignore")
-from itertools import product
-from nur import gurobi_train
-
 from colorama import Fore, Style
 
+from nur import gurobi_train
 from nur.bitwuzla_utils import (
     b_dot_positive,
     b_int,
@@ -54,15 +28,16 @@ from nur.bitwuzla_utils import (
     to_decimal,
 )
 
+from typing import Callable, TYPE_CHECKING
 
-"""
-                               -----------------------------------
-                                Miscellaneous Bitwuzla Functions
-                               -----------------------------------
-"""
+if TYPE_CHECKING:
+    from nur.gurobi_train import NNParams, LinParams
+    from nur.bitwuzla_utils import BwObj, BwContext
+    from numbers import Number
 
 
-def b_shift_inc(arr, F_prec, bw_obj):
+def b_shift_inc(arr, F_prec, bw_obj: BwObj):
+    """Left-shift array elements by F_prec bits."""
     tm, opt, parser, bvsizeB = bw_obj
     arr2 = []
     for i in range(len(arr)):
@@ -70,7 +45,8 @@ def b_shift_inc(arr, F_prec, bw_obj):
     return arr2
 
 
-def b_mat(mat, bw_obj):
+def b_mat(mat, bw_obj: BwObj):
+    """Convert Python matrices/vectors to BV constant arrays."""
     tm, opt, parser, bvsizeB = bw_obj
     matrix = [
         [tm.mk_bv_value(bvsizeB, mat[i][j]) for j in range(len(mat[i]))]
@@ -79,25 +55,29 @@ def b_mat(mat, bw_obj):
     return matrix
 
 
-def b_vec(vec, bw_obj):
+def b_vec(vec, bw_obj: BwObj):
+    """Balanced conjunction over a list of terms."""
     tm, opt, parser, bvsizeB = bw_obj
     vector = [tm.mk_bv_value(bvsizeB, vec[i]) for i in range(len(vec))]
     return vector
 
 
-def b_less_than(rank_before, rank_after, context):
+def b_less_than(rank_before, rank_after, context: BwContext):
+    """Comparison predicate over BV ranks."""
     state_vars, inp_out_vars, bw_obj, bits = context
     tm, opt, parser, bvsizeB = bw_obj
     return tm.mk_term(bitwuzla.Kind.BV_SLT, [rank_before, rank_after])
 
 
-def b_less_than_eq(rank_before, rank_after, context):
+def b_less_than_eq(rank_before, rank_after, context: BwContext):
+    """Comparison predicate over BV ranks."""
     state_vars, inp_out_vars, bw_obj, bits = context
     tm, opt, parser, bvsizeB = bw_obj
     return tm.mk_term(bitwuzla.Kind.BV_SLE, [rank_before, rank_after])
 
 
-def b_less_than_eps(rank_before, rank_after, delta, context, F_prec, isDebug=False):
+def b_less_than_eps(rank_before, rank_after, delta, context: BwContext, F_prec):
+    """Comparison predicate over BV ranks."""
     state_vars, inp_out_vars, bw_obj, bits = context
     tm, opt, parser, bvsizeB = bw_obj
     dt = tm.mk_bv_value(bvsizeB, int(math.floor(delta)))
@@ -105,12 +85,11 @@ def b_less_than_eps(rank_before, rank_after, delta, context, F_prec, isDebug=Fal
         bitwuzla.Kind.BV_SLT,
         [tm.mk_term(bitwuzla.Kind.BV_SUB, [rank_before, dt]), rank_after],
     )
-    if isDebug:
-        breakpoint()
     return res
 
 
-def b_set_list_unequal(l1, l2, bw_obj):
+def b_set_list_unequal(l1, l2, bw_obj: BwObj):
+    """Assert inequality between lists of BV values."""
     tm, opt, parser, bvsizeB = bw_obj
     res = []
     for i in range(len(l1)):
@@ -128,14 +107,8 @@ def b_set_list_unequal(l1, l2, bw_obj):
     return res
 
 
-"""
-                               -----------------------------------
-                                Bitwuzla Functions for CAV'25 NRF
-                               -----------------------------------
-"""
-
-
-def bLinear(bw_obj, W, b, inp, F_prec, bits, isDebug=False):
+def b_linear(bw_obj: BwObj, W, b, inp, F_prec, bits, printing=False):
+    """One-layer quantized neural inference: W*x + b."""
     tm, opt, parser, bvsizeB = bw_obj
     scaled_W_py = (W * (2**F_prec)).astype(int).tolist()
     scaled_b_py = (b * (2**F_prec)).astype(int).tolist()
@@ -149,7 +122,7 @@ def bLinear(bw_obj, W, b, inp, F_prec, bits, isDebug=False):
     for i in range(len(scaled_b_bw)):
         out.append(tm.mk_term(bitwuzla.Kind.BV_ADD, [out1[i], scaled_b_bw[i]]))
 
-    if isDebug:
+    if printing:
         print(f"bLin inp: {b_int(inp, bw_obj, bits)}")
         print(f"bLin W: {scaled_W_py} b: {scaled_b_py}")
         print(f"bLin out1: {b_int(out1, bw_obj, bits)}")
@@ -158,20 +131,20 @@ def bLinear(bw_obj, W, b, inp, F_prec, bits, isDebug=False):
     return out
 
 
-def bSignNN(bw_obj, param, x, F_prec, bits, gap, isDebug):
+def b_sign_nn(bw_obj: BwObj, param, x, F_prec, bits, gap):
+    """Multi-layer sign activation network producing binary masks."""
     tm, opt, parser, bvsizeB = bw_obj
     W0, b0 = param[0]
-    h_i = bLinear(bw_obj, W0, b0, x, F_prec, bits, isDebug)
+    h_i = b_linear(bw_obj, W0, b0, x, F_prec, bits)
     s_i = b_sign_func(bw_obj, h_i, bits, 1 == len(param), F_prec, gap)
-    if isDebug:
-        breakpoint()
     for i, (W, b) in enumerate(param[1:], 1):
-        h_i = bLinear(bw_obj, W, b, s_i, F_prec, bits)
+        h_i = b_linear(bw_obj, W, b, s_i, F_prec, bits)
         s_i = b_sign_func(bw_obj, h_i, bits, i + 1 == len(param), F_prec, gap)
     return s_i
 
 
-def bCAV_NRF(bw_obj, nnparam, clparam, inp, scale, F_prec, bits, gap, isDebug=False):
+def bCAV_NRF(bw_obj: BwObj, nnparam, clparam, inp, scale, F_prec, bits, gap):
+    """Combine quantized linear and sign networks to compute a ranking function."""
     tm, opt, parser, bvsizeB = bw_obj
     bZero = tm.mk_bv_value(bvsizeB, 0)
 
@@ -182,12 +155,12 @@ def bCAV_NRF(bw_obj, nnparam, clparam, inp, scale, F_prec, bits, gap, isDebug=Fa
     scaled_inp = b_elem_mul(bw_obj, scaled_inp1, scale_py, F_prec, bits)
 
     if nnparam == None:
-        z = bLinear(bw_obj, *clparam, scaled_inp, F_prec, bits, isDebug)
+        z = b_linear(bw_obj, *clparam, scaled_inp, F_prec, bits)
         V = b_sum(z, bw_obj, F_prec, bits)
         return V
 
-    w = bSignNN(bw_obj, nnparam, scaled_inp, F_prec, bits, gap, isDebug)
-    z = bLinear(bw_obj, *clparam, scaled_inp, F_prec, bits, isDebug)
+    w = b_sign_nn(bw_obj, nnparam, scaled_inp, F_prec, bits, gap)
+    z = b_linear(bw_obj, *clparam, scaled_inp, F_prec, bits)
 
     # If(wi > 0, zi, 0)
     V_arr = [
@@ -198,8 +171,6 @@ def bCAV_NRF(bw_obj, nnparam, clparam, inp, scale, F_prec, bits, gap, isDebug=Fa
         for wi, zi in zip(w, z)
     ]
     V = b_sum(V_arr, bw_obj, F_prec, bits)
-    if isDebug:
-        breakpoint()
     return V
 
 
@@ -223,6 +194,7 @@ def check_tran(
     gap,
     kappa_quant,
 ):
+    """Assert transition relation, ranking constraints, and collect SAT counterexamples."""
     tm, opt, parser, bvsizeB = bw_obj
     cex_trans = []
     for cex_i in range(1):
@@ -250,9 +222,6 @@ def check_tran(
 
         res = parser.bitwuzla().check_sat()
         if res == bitwuzla.Result.SAT:
-            # bPrint(curr_vars, bw_obj)
-            # bPrint(next_vars, bw_obj)
-            # bPrint(non_state_vars, bw_obj)
             c_cur = np.array(b_int(curr_vars, bw_obj, bits))
             c_nex = np.array(b_int(next_vars, bw_obj, bits))
             cex_trans.append((q_cur, c_cur, q_nex, c_nex))
@@ -260,30 +229,20 @@ def check_tran(
                 f"{Fore.CYAN}q = {q_cur} to q = {q_nex} is SAT {(q_cur, c_cur, q_nex, c_nex)} {Style.RESET_ALL}"
             )
 
-            V_eval_q = gurobi_train.evalQuantNN(
+            V_eval_q = gurobi_train.eval_quant_nn(
                 nnparam[q_cur], *clparam[q_cur], c_cur, scale, gap, F_prec
             )
-            V_nex_eval_q = gurobi_train.evalQuantNN(
+            V_nex_eval_q = gurobi_train.eval_quant_nn(
                 nnparam[q_nex], *clparam[q_nex], c_nex, scale, gap, F_prec
             )
-            V_eval = gurobi_train.evalFunkyNN(nnparam[q_cur], *clparam[q_cur], c_cur)
-            V_nex_eval = gurobi_train.evalFunkyNN(
+            V_eval = gurobi_train.eval_funky_nn(nnparam[q_cur], *clparam[q_cur], c_cur)
+            V_nex_eval = gurobi_train.eval_funky_nn(
                 nnparam[q_nex], *clparam[q_nex], c_nex
             )
             print(
                 f"{Fore.WHITE}\tBitwuzla Rank [{to_decimal(V_cur, bw_obj, bits)/2**F_prec} -> {to_decimal(V_nex, bw_obj, bits)/2**F_prec}]; Numpy Rank [{V_eval} -> {V_nex_eval}]; ; Numpy RankQ [{V_eval_q/2**F_prec} -> {V_nex_eval_q/2**F_prec}]  {Style.RESET_ALL}"
             )
 
-            # if(todecimal(V_cur, bw_obj, bits)/2**F_prec != V_eval):
-            #    print("[POTENTIAL BUG]")
-            #    V_cur = bCAV_NRF(bw_obj, nnparam[q_cur], clparam[q_cur], curr_vars, scale, F_prec, bits, gap, isDebug =  True)
-            #    V_eval = gurobi_train.evalQuantNN(nnparam[q_cur], *clparam[q_cur], c_cur, scale, gap, F_prec, isDebug = True)
-            #
-            # if (todecimal(V_nex, bw_obj, bits)/2**F_prec != V_nex_eval):
-            #    print("[POTENTIAL BUG]")
-            #    V_nex = bCAV_NRF(bw_obj, nnparam[q_nex], clparam[q_nex], next_vars, scale, F_prec, bits, gap, isDebug = True)
-            #    V_eval = gurobi_train.evalQuantNN(nnparam[q_nex], *clparam[q_nex], c_nex, scale, gap, F_prec, isDebug = True)
-            # cnd = BLessThanEps(V_cur, V_nex, eps, ctx, F_prec, (c_cur==[255] and c_nex==[0]))
         else:
             print(f"{Fore.BLUE}q = {q_cur} to q = {q_nex} is UNSAT{Style.RESET_ALL}")
         parser.bitwuzla().pop()
@@ -292,24 +251,32 @@ def check_tran(
 
 
 def check(
-    nnparam,
-    clparam,
-    curr_vars,
-    next_vars,
-    non_state_vars,
-    scale,
-    spec_automata,
-    ctx,
-    q_set,
-    is_acc,
-    F_prec,
-    bw_obj,
-    bits,
-    gap,
-    kappa,
+    nnparam: NNParams,
+    clparam: LinParams,
+    curr_vars: list[bitwuzla.Term],
+    next_vars: list[bitwuzla.Term],
+    non_state_vars: list[bitwuzla.Term],
+    scale: int,
+    spec_automata: Callable,
+    ctx: BwContext,
+    q_set: list[int],
+    is_acc: bool,
+    F_prec: int,
+    bw_obj: BwObj,
+    bits: int,
+    gap: float,
+    kappa: Number,
 ):
+    """Iterate over all state-pair transitions to gather violations."""
+    assert isinstance(gap, float)
+    assert isinstance(scale, int)
+    assert isinstance(q_set, list)
+    assert all(isinstance(item, int) for item in q_set)
+    assert all(isinstance(x, bitwuzla.Term) for x in curr_vars)
+    assert all(isinstance(x, bitwuzla.Term) for x in next_vars)
+    assert all(isinstance(x, bitwuzla.Term) for x in non_state_vars)
     cex = []
-    tm, opt, parser, bvsizeB = bw_obj
+    tm, _opt, _parser, bvsizeB = bw_obj
 
     kappa_quant = tm.mk_bv_value(bvsizeB, int(kappa * (2**F_prec)))
     for q_cur, q_nex in product(q_set, repeat=2):
@@ -348,19 +315,20 @@ def check(
 
 
 def check_init(
-    nnparam,
-    clparam,
-    curr_vars,
+    nnparam: NNParams,
+    clparam: LinParams,
+    curr_vars: list[bitwuzla.Term],
     init_state_q,
-    F_prec,
-    bw_obj,
-    scale,
-    bits,
-    gap,
-    q_set,
-    ctx,
-    kappa,
+    F_prec: int,
+    bw_obj: BwObj,
+    scale: int,
+    bits: int,
+    gap: float,
+    q_set: list[int],
+    ctx: BwContext,
+    kappa: Number,
 ):
+    """Verify initial-state ranking precondition to gather violations."""
     invar_cex = []
     tm, opt, parser, bvsizeB = bw_obj
     kappa_quant = tm.mk_bv_value(bvsizeB, int(kappa * (2**F_prec)))
@@ -379,10 +347,10 @@ def check_init(
             invar_cex.append((q0, c_cur))
             print(f"{Fore.CYAN}q = {q0} [InVar] is SAT {(q0, c_cur)} {Style.RESET_ALL}")
 
-            V_eval_q = gurobi_train.evalQuantNN(
+            V_eval_q = gurobi_train.eval_quant_nn(
                 nnparam[q0], *clparam[q0], c_cur, scale, gap, F_prec
             )
-            V_eval = gurobi_train.evalFunkyNN(nnparam[q0], *clparam[q0], c_cur)
+            V_eval = gurobi_train.eval_funky_nn(nnparam[q0], *clparam[q0], c_cur)
             print(
                 f"{Fore.WHITE}\tBitwuzla Rank [{to_decimal(V_cur, bw_obj, bits)/2**F_prec}]; Numpy Rank [{V_eval}]; ; Numpy RankQ [{V_eval_q/2**F_prec}]  {Style.RESET_ALL}"
             )
