@@ -7,6 +7,8 @@ network quantization routines using Bitwuzla as the SMT backend.
 (note: quantization is switched of for current version as we use integer)
 """
 
+from __future__ import annotations
+
 import math
 import warnings
 from itertools import product
