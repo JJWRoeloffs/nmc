@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 def b_shift_inc(arr, F_prec, bw_obj: BwObj):
     """Left-shift array elements by F_prec bits."""
-    tm, opt, parser, bvsizeB = bw_obj
+    tm, _opt, _parser, _bvsizeB = bw_obj
     arr2 = []
     for i in range(len(arr)):
         arr2.append(tm.mk_term(bitwuzla.Kind.BV_SHL, [arr[i], F_prec]))
@@ -47,7 +47,7 @@ def b_shift_inc(arr, F_prec, bw_obj: BwObj):
 
 def b_mat(mat, bw_obj: BwObj):
     """Convert Python matrices/vectors to BV constant arrays."""
-    tm, opt, parser, bvsizeB = bw_obj
+    tm, _opt, _parser, bvsizeB = bw_obj
     matrix = [
         [tm.mk_bv_value(bvsizeB, mat[i][j]) for j in range(len(mat[i]))]
         for i in range(len(mat))
@@ -57,29 +57,29 @@ def b_mat(mat, bw_obj: BwObj):
 
 def b_vec(vec, bw_obj: BwObj):
     """Balanced conjunction over a list of terms."""
-    tm, opt, parser, bvsizeB = bw_obj
+    tm, _opt, _parser, bvsizeB = bw_obj
     vector = [tm.mk_bv_value(bvsizeB, vec[i]) for i in range(len(vec))]
     return vector
 
 
 def b_less_than(rank_before, rank_after, context: BwContext):
     """Comparison predicate over BV ranks."""
-    state_vars, inp_out_vars, bw_obj, bits = context
-    tm, opt, parser, bvsizeB = bw_obj
+    _state_vars, _inp_out_vars, bw_obj, _bits = context
+    tm, _opt, _parser, _bvsizeB = bw_obj
     return tm.mk_term(bitwuzla.Kind.BV_SLT, [rank_before, rank_after])
 
 
 def b_less_than_eq(rank_before, rank_after, context: BwContext):
     """Comparison predicate over BV ranks."""
-    state_vars, inp_out_vars, bw_obj, bits = context
-    tm, opt, parser, bvsizeB = bw_obj
+    _state_vars, _inp_out_vars, bw_obj, _bits = context
+    tm, _opt, _parser, _bvsizeB = bw_obj
     return tm.mk_term(bitwuzla.Kind.BV_SLE, [rank_before, rank_after])
 
 
 def b_less_than_eps(rank_before, rank_after, delta, context: BwContext, F_prec):
     """Comparison predicate over BV ranks."""
-    state_vars, inp_out_vars, bw_obj, bits = context
-    tm, opt, parser, bvsizeB = bw_obj
+    _state_vars, _inp_out_vars, bw_obj, _bits = context
+    tm, _opt, _parser, bvsizeB = bw_obj
     dt = tm.mk_bv_value(bvsizeB, int(math.floor(delta)))
     res = tm.mk_term(
         bitwuzla.Kind.BV_SLT,
@@ -90,7 +90,7 @@ def b_less_than_eps(rank_before, rank_after, delta, context: BwContext, F_prec):
 
 def b_set_list_unequal(l1, l2, bw_obj: BwObj):
     """Assert inequality between lists of BV values."""
-    tm, opt, parser, bvsizeB = bw_obj
+    tm, _opt, _parser, bvsizeB = bw_obj
     res = []
     for i in range(len(l1)):
         res.append(
@@ -109,7 +109,7 @@ def b_set_list_unequal(l1, l2, bw_obj: BwObj):
 
 def b_linear(bw_obj: BwObj, W, b, inp, F_prec, bits, printing=False):
     """One-layer quantized neural inference: W*x + b."""
-    tm, opt, parser, bvsizeB = bw_obj
+    tm, _opt, _parser, _bvsizeB = bw_obj
     scaled_W_py = (W * (2**F_prec)).astype(int).tolist()
     scaled_b_py = (b * (2**F_prec)).astype(int).tolist()
     scaled_b_bw = b_vec(scaled_b_py, bw_obj)
@@ -133,7 +133,7 @@ def b_linear(bw_obj: BwObj, W, b, inp, F_prec, bits, printing=False):
 
 def b_sign_nn(bw_obj: BwObj, param, x, F_prec, bits, gap):
     """Multi-layer sign activation network producing binary masks."""
-    tm, opt, parser, bvsizeB = bw_obj
+    _tm, _opt, _parser, _bvsizeB = bw_obj
     W0, b0 = param[0]
     h_i = b_linear(bw_obj, W0, b0, x, F_prec, bits)
     s_i = b_sign_func(bw_obj, h_i, bits, 1 == len(param), F_prec, gap)
@@ -145,7 +145,7 @@ def b_sign_nn(bw_obj: BwObj, param, x, F_prec, bits, gap):
 
 def bCAV_NRF(bw_obj: BwObj, nnparam, clparam, inp, scale, F_prec, bits, gap):
     """Combine quantized linear and sign networks to compute a ranking function."""
-    tm, opt, parser, bvsizeB = bw_obj
+    tm, _opt, _parser, bvsizeB = bw_obj
     bZero = tm.mk_bv_value(bvsizeB, 0)
 
     F_btor = tm.mk_bv_value(bvsizeB, F_prec)
@@ -175,77 +175,82 @@ def bCAV_NRF(bw_obj: BwObj, nnparam, clparam, inp, scale, F_prec, bits, gap):
 
 
 def check_tran(
-    q_cur,
-    q_nex,
-    trans_,
-    V_cur,
-    V_nex,
-    nnparam,
-    clparam,
-    curr_vars,
-    next_vars,
-    non_state_vars,
-    scale,
-    ctx,
-    is_acc,
-    F_prec,
-    bw_obj,
-    bits,
-    gap,
-    kappa_quant,
-):
+    q_cur: int,
+    q_nex: int,
+    trans_: list[bitwuzla.Term],
+    V_cur: bitwuzla.Term,
+    V_nex: bitwuzla.Term,
+    nnparam: NNParams,
+    clparam: LinParams,
+    curr_vars: list[bitwuzla.Term],
+    next_vars: list[bitwuzla.Term],
+    non_state_vars: list[bitwuzla.Term],
+    scale: int,
+    ctx: BwContext,
+    is_acc: list[int],
+    F_prec: int,
+    bw_obj: BwObj,
+    bits: int,
+    gap: float,
+    kappa_quant: bitwuzla.Term,
+) -> list:
     """Assert transition relation, ranking constraints, and collect SAT counterexamples."""
-    tm, opt, parser, bvsizeB = bw_obj
+    assert isinstance(V_cur, bitwuzla.Term)
+    assert isinstance(V_nex, bitwuzla.Term)
+    assert all(isinstance(tr, bitwuzla.Term) for tr in trans_)
+    assert isinstance(q_cur, int)
+    assert isinstance(q_nex, int)
+    assert isinstance(bits, int)
+    assert isinstance(gap, float)
+    assert isinstance(F_prec, int)
+    assert isinstance(is_acc, list)
+    assert all(x == 1 or x == 0 for x in is_acc)
+    assert isinstance(scale, int)
+    assert all(isinstance(x, bitwuzla.Term) for x in curr_vars)
+    assert all(isinstance(x, bitwuzla.Term) for x in next_vars)
+    assert all(isinstance(x, bitwuzla.Term) for x in non_state_vars)
+
+    _tm, _opt, parser, _bvsizeB = bw_obj
     cex_trans = []
-    for cex_i in range(1):
-        parser.bitwuzla().push()
-        for cex in cex_trans:
-            parser.bitwuzla().assert_formula(
-                b_and(b_set_list_unequal(curr_vars, cex[1], bw_obj), bw_obj)
-            )
-            parser.bitwuzla().assert_formula(
-                b_and(b_set_list_unequal(next_vars, cex[3], bw_obj), bw_obj)
-            )
+    parser.bitwuzla().push()
 
-        if len(trans_) > 0:
-            parser.bitwuzla().assert_formula(b_and(trans_, bw_obj))
+    if len(trans_) > 0:
+        parser.bitwuzla().assert_formula(b_and(trans_, bw_obj))
 
-        if is_acc[q_cur] == 1:
-            eps = 1  # scale*.9*(2**F_prec)
-            cnd_pre = b_less_than_eq(V_cur, kappa_quant, ctx)
-            cnd_post = b_less_than_eps(V_cur, V_nex, eps, ctx, F_prec)
-            parser.bitwuzla().assert_formula(b_and([cnd_pre, cnd_post], bw_obj))
-        else:
-            cnd_pre = b_less_than_eq(V_cur, kappa_quant, ctx)
-            cnd_post = b_less_than(V_cur, V_nex, ctx)
-            parser.bitwuzla().assert_formula(b_and([cnd_pre, cnd_post], bw_obj))
+    if is_acc[q_cur] == 1:
+        eps = 1  # scale*.9*(2**F_prec)
+        cnd_pre = b_less_than_eq(V_cur, kappa_quant, ctx)
+        cnd_post = b_less_than_eps(V_cur, V_nex, eps, ctx, F_prec)
+        parser.bitwuzla().assert_formula(b_and([cnd_pre, cnd_post], bw_obj))
+    else:
+        cnd_pre = b_less_than_eq(V_cur, kappa_quant, ctx)
+        cnd_post = b_less_than(V_cur, V_nex, ctx)
+        parser.bitwuzla().assert_formula(b_and([cnd_pre, cnd_post], bw_obj))
 
-        res = parser.bitwuzla().check_sat()
-        if res == bitwuzla.Result.SAT:
-            c_cur = np.array(b_int(curr_vars, bw_obj, bits))
-            c_nex = np.array(b_int(next_vars, bw_obj, bits))
-            cex_trans.append((q_cur, c_cur, q_nex, c_nex))
-            print(
-                f"{Fore.CYAN}q = {q_cur} to q = {q_nex} is SAT {(q_cur, c_cur, q_nex, c_nex)} {Style.RESET_ALL}"
-            )
+    res = parser.bitwuzla().check_sat()
+    if res == bitwuzla.Result.SAT:
+        c_cur = np.array(b_int(curr_vars, bw_obj, bits))
+        c_nex = np.array(b_int(next_vars, bw_obj, bits))
+        cex_trans.append((q_cur, c_cur, q_nex, c_nex))
+        print(
+            f"{Fore.CYAN}q = {q_cur} to q = {q_nex} is SAT {(q_cur, c_cur, q_nex, c_nex)} {Style.RESET_ALL}"
+        )
 
-            V_eval_q = gurobi_train.eval_quant_nn(
-                nnparam[q_cur], *clparam[q_cur], c_cur, scale, gap, F_prec
-            )
-            V_nex_eval_q = gurobi_train.eval_quant_nn(
-                nnparam[q_nex], *clparam[q_nex], c_nex, scale, gap, F_prec
-            )
-            V_eval = gurobi_train.eval_funky_nn(nnparam[q_cur], *clparam[q_cur], c_cur)
-            V_nex_eval = gurobi_train.eval_funky_nn(
-                nnparam[q_nex], *clparam[q_nex], c_nex
-            )
-            print(
-                f"{Fore.WHITE}\tBitwuzla Rank [{to_decimal(V_cur, bw_obj, bits)/2**F_prec} -> {to_decimal(V_nex, bw_obj, bits)/2**F_prec}]; Numpy Rank [{V_eval} -> {V_nex_eval}]; ; Numpy RankQ [{V_eval_q/2**F_prec} -> {V_nex_eval_q/2**F_prec}]  {Style.RESET_ALL}"
-            )
+        V_eval_q = gurobi_train.eval_quant_nn(
+            nnparam[q_cur], *clparam[q_cur], c_cur, scale, gap, F_prec
+        )
+        V_nex_eval_q = gurobi_train.eval_quant_nn(
+            nnparam[q_nex], *clparam[q_nex], c_nex, scale, gap, F_prec
+        )
+        V_eval = gurobi_train.eval_funky_nn(nnparam[q_cur], *clparam[q_cur], c_cur)
+        V_nex_eval = gurobi_train.eval_funky_nn(nnparam[q_nex], *clparam[q_nex], c_nex)
+        print(
+            f"{Fore.WHITE}\tBitwuzla Rank [{to_decimal(V_cur, bw_obj, bits)/2**F_prec} -> {to_decimal(V_nex, bw_obj, bits)/2**F_prec}]; Numpy Rank [{V_eval} -> {V_nex_eval}]; ; Numpy RankQ [{V_eval_q/2**F_prec} -> {V_nex_eval_q/2**F_prec}]  {Style.RESET_ALL}"
+        )
 
-        else:
-            print(f"{Fore.BLUE}q = {q_cur} to q = {q_nex} is UNSAT{Style.RESET_ALL}")
-        parser.bitwuzla().pop()
+    else:
+        print(f"{Fore.BLUE}q = {q_cur} to q = {q_nex} is UNSAT{Style.RESET_ALL}")
+    parser.bitwuzla().pop()
 
     return cex_trans
 
@@ -260,7 +265,7 @@ def check(
     spec_automata: Callable,
     ctx: BwContext,
     q_set: list[int],
-    is_acc: bool,
+    is_acc: list[int],
     F_prec: int,
     bw_obj: BwObj,
     bits: int,
@@ -330,7 +335,7 @@ def check_init(
 ):
     """Verify initial-state ranking precondition to gather violations."""
     invar_cex = []
-    tm, opt, parser, bvsizeB = bw_obj
+    tm, _opt, parser, bvsizeB = bw_obj
     kappa_quant = tm.mk_bv_value(bvsizeB, int(kappa * (2**F_prec)))
     for q0 in q_set:
         if init_state_q[q0] == 0:

@@ -197,7 +197,7 @@ def b_range(var, bw_obj: BwObj, lb, ub):
     return tm.mk_term(bitwuzla.Kind.AND, [l1, u1])
 
 
-def b_and(arr, bw_obj: BwObj):
+def b_and(arr: list[bitwuzla.Term], bw_obj: BwObj):
     """Recursively assemble balanced AND/OR trees over lists of terms."""
     tm, _opt, _parser, _bvsizeB = bw_obj
     if len(arr) == 1:
@@ -210,7 +210,7 @@ def b_and(arr, bw_obj: BwObj):
     )
 
 
-def b_or(arr, bw_obj: BwObj):
+def b_or(arr: list[bitwuzla.Term], bw_obj: BwObj):
     """Create a disjunction of conjunctions for 2D arrays of terms."""
     tm, _opt, _parser, _bvsizeB = bw_obj
     if len(arr) == 1:
@@ -223,22 +223,16 @@ def b_or(arr, bw_obj: BwObj):
     )
 
 
-def b_or_of_and(arr2D, bw_obj: BwObj):
+def b_or_of_and(arr2D: list[list[bitwuzla.Term]], bw_obj: BwObj):
     """Decode Bitwuzla BitVec results into Python integers (b_int’s complement)."""
-    arr1D = []
-    for arr in arr2D:
-        arr1D.append(b_and(arr, bw_obj))
-    return b_or(arr1D, bw_obj)
+    return b_or([b_and(arr, bw_obj) for arr in arr2D], bw_obj)
 
 
-def b_int(arr, bw_obj: BwObj, bits):
-    arr2 = []
-    for i in range(len(arr)):
-        arr2.append(to_decimal(arr[i], bw_obj, bits))
-    return arr2
+def b_int(arr: list[bitwuzla.Term], bw_obj: BwObj, bits: int) -> list[int]:
+    return [to_decimal(x, bw_obj, bits) for x in arr]
 
 
-def to_decimal(x, bw_obj: BwObj, bits):
+def to_decimal(x: bitwuzla.Term, bw_obj: BwObj, bits: int) -> int:
     _tm, _opt, parser, _bvsizeB = bw_obj
     val = int(parser.bitwuzla().get_value(x).value(10))
     s = 1 << (bits - 1)

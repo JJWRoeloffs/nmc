@@ -18,10 +18,12 @@ bits: int
 F_prec: int
     blah
 is_acc: list[int]
-    blah
+    The indexes of the states in spec_automata that are accepting states
+is_init: list[int]
+    The indexes of the states in spec_automata that are initial states
 init_samp: list[tuple[int, list[float]]]
 spec_automata: Callable
-    blah
+    The automata of the specification.
 
 Hyperparemeters:
 scale: int
