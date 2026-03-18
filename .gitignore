@@ -94,3 +94,6 @@ gurobi.lic
 
 # resutls directories
 results*/
+
+# Profiling results
+*.prof
